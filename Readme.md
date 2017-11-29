@@ -1,6 +1,11 @@
 # Schmitz Lab in-vivo 
 
-__Collaborators:__ Viktor Bahr (viktor@eridian.systems), Constance Holman (constance.holman@gmail.com), Noam Nitzan (noam.nitzan@charite.de), Daniel Parthier (daniel.parthier@charite.de), John Tukker (john.tukker@charite.de)
+__Collaborators:__  
+Viktor Bahr (viktor@eridian.systems),  
+Constance Holman (constance.holman@gmail.com),  
+Noam Nitzan (noam.nitzan@charite.de),  
+Daniel Parthier (daniel.parthier@charite.de),  
+John Tukker (john.tukker@charite.de)
 
 ## Description: 
 
