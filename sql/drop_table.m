@@ -1,4 +1,4 @@
-function sql_drop(DB)
+function drop_table(DB)
 %drop_table Simple wrapper for mysql drop table routine.
 %
 %   Syntax: drop_table(DB)
@@ -23,9 +23,9 @@ function sql_drop(DB)
 
 % test sql connection
 try
-    c = evalc('d = mysql(''show tables'')');
-catch me
-    if isempty(d)
+    tables = mysql('show tables');
+catch err
+    if isempty(tables)
         fprintf('No tables found.\n');
         return;
     else
@@ -34,24 +34,52 @@ catch me
     end
 end
 
+% drop table(s)
 if isstruct(DB)
-    tables = flipud(fieldnames(DB)); % flip in order to not violate fk-constraints
-    for t = tables'
-        try
-            c = evalc('mysql(sprintf(''drop table %s'', char(t)));');
-        catch me
-            fprintf('Unable to drop ''%s''.\n', char(t));
+    fields = flipud(fieldnames(DB)); % flip in order to not violate fk-constraints
+    for i = 1:numel(fields)
+        if sum(strcmp(tables, fields{i})) == 0
+            fprintf('Table ''%s'' not found.\n', fields{i});
             continue;
         end
-        fprintf('Droppped ''%s'' table.\n', char(t));
+        try_drop(fields{i});
     end
+elseif ischar(DB)
+    if is_valid_create_query(DB)
+        DB = get_table_name(DB);
+    end
+    if sum(strcmp(tables, DB)) == 0
+        fprintf('Table ''%s'' not found.\n', DB);
+        return;
+    end
+    try_drop(DB);
 else
-    try
-        c = evalc('mysql(sprintf(''drop table %s'', DB));');
-        fprintf('Droppped ''%s'' table.\n', DB);
-    catch me
-        fprintf('Unable to drop ''%s''.\n', char(t));
-    end
+    fprintf('Input has to be string or struct.\n')
 end
 
+%% helper functions
+    % try to drop tables
+    function try_drop(table)
+        try
+            c = evalc('mysql(sprintf(''drop table %s'', table));');
+            fprintf('Droppped ''%s'' table.\n', table);
+        catch me
+            fprintf('Unable to drop ''%s''.\n', table);
+        end
+    end
+
+    function valid = is_valid_create_query(str)
+        valid = strncmpi(str, 'create table ', 13);
+    end
+
+    % extract table name from create query
+    function table = get_table_name(query)
+        suffix = strsplit(query,'('); % split by first '('
+        commands = strsplit(suffix{1}, ' '); % split commands by ' '
+        commands(cellfun(@isempty, commands)) = []; % try to drop spaces
+        table = commands{end};
+        table = strsplit(table, '`'); % try to split by '`'
+        table(cellfun(@isempty, table)) = []; % remove '`'
+        table = table{1};
+    end
 end

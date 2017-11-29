@@ -1,4 +1,4 @@
-function sql_create(DB)
+function create_table(DB)
 %create_table Simple wrapper for mysql create table routine.
 %
 %   Syntax: create_table(DB)
@@ -23,7 +23,6 @@ function sql_create(DB)
 % along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 % test sql connection
-
 try
     r = evalc('d = mysql(''select database()'')');
 catch me
@@ -36,25 +35,52 @@ catch me
     end
 end
 
+% create table(s)
 if isstruct(DB)
     fields = fieldnames(DB); % get table names
 	for i = 1:numel(fields)
+        if ~is_valid_create_query(DB.(fields{i}))
+            fprintf('DB.%s is not a valid create query.\n', fields{i});
+            return;
+        end
 	    try
             r = evalc('mysql(DB.(fields{i}))');
-            fprintf('Created ''%s''.\n', fields{i});
+            fprintf('Created ''%s'' table.\n', fields{i});
 	    catch me
-            fprintf('Unable to create ''%s''.\n', fields{i});
+            fprintf('Unable to create ''%s'' table.\n', fields{i});
 	    end
 	end
-elseif isstr(DB)
+elseif ischar(DB)
+    if ~is_valid_create_query(DB)
+        fprintf('DB.%s is not a valid create query.\n', DB);
+        return;
+    end
+    table = get_table_name(DB);
     try
         r = evalc('mysql(DB)');
-        fprintf('Created table.\n')
+        fprintf('Created table ''%s''.\n', table);
     catch me
-        disp(me)
+        fprintf('Unable to create ''%s''.\n', table);
     end
 else
     fprintf('Input has to be string or struct.\n')
 end
+
+%% helper functions
+    
+    function valid = is_valid_create_query(str)
+        valid = strncmpi(str, 'create table ', 13);
+    end
+
+    % extract table name from create query
+    function table = get_table_name(query)
+        suffix = strsplit(query,'('); % split by first '('
+        commands = strsplit(suffix{1}, ' '); % split commands by ' '
+        commands(cellfun(@isempty, commands)) = []; % try to drop spaces
+        table = commands{end};
+        table = strsplit(table, '`'); % try to split by '`'
+        table(cellfun(@isempty, table)) = []; % remove '`'
+        table = table{1};
+    end
 
 end
