@@ -6,7 +6,7 @@ function drop_table(DB)
 %   [IN]
 %       DB       :  Struct with table names as fieldnames.
 %
-% Copyright (C) 2017  Viktor Bahr (viktor [at] bccn-berlin.de)
+% Copyright (C) 2017  Viktor Bahr (viktor [at] eridian.systems)
 % 
 % This program is free software: you can redistribute it and/or modify
 % it under the terms of the GNU General Public License as published by
