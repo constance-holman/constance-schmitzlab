@@ -7,7 +7,7 @@ function project_id = insert_project(name)
 %       name        :   Name of the project
 %
 %   [OUT]
-%       animal_id   :   Generated unique project identifier
+%       project_id   :   Generated unique project identifier
 %
 % Copyright (C) 2017  Viktor Bahr (viktor [at] eridian.systems)
 % 
