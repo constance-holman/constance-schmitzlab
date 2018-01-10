@@ -28,3 +28,9 @@ create_table(db);
 % insert project
 project_id = insert_project('Test');
 
+% insert amplifier
+amplifier_id = insert_amplifier('Test');
+
+% insert ProbeType
+probe_type_id = insert_probetype('Test');
+
