@@ -1,8 +1,11 @@
 %% connection
 
+% insert your name here
+name = '';
+
 % connect to database
-mysql('open','mysql','viktor','viktor');
-mysql('use','viktor');
+mysql('open','mysql', name, name);
+mysql('use', name);
 
 %% setup
 
