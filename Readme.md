@@ -22,5 +22,7 @@ It's also kind of a demo repository for learning git - I'll try to keep it as cl
     - ``init.m`` initialize database create queries in as MATLAB struct variable.
     - ``create_table.m`` wrapper function to create tables, uses variable created by ``init.m``.
     - ``drop_table.m`` wrapper function for dropping tables, also uses variable created by ``init.m``.
-    - ``ìnsert_project.m`` wrappter function for inserting a row into the ``Project`` table
+    - ``ìnsert_project.m`` wrapper function for inserting a row into the ``Project`` table
+    - ``insert_amplifier.m`` wrapper function for inserting a row into the ``Amplifier`` table
+    - ``insert_probetype.m`` wrapper function for inserting a row into the ``ProbeType`` table
     - ``database.mwb`` mysql-workbench model of the database; for query creation and visualization.
