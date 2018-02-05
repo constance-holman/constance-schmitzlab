@@ -1,7 +1,7 @@
-function experiment_id = insert_experiment(project_id, experimenter, description)
+function experiment_id = insert_experiment(project_id, varargin)
 %insert_experiment Insert a new row into the Experiment table.
 %
-%   Syntax: insert_experiment(project_id, experimenter, description)
+%   Syntax: insert_experiment(project_id, 'Experimenter', experimenter, 'Description', description)
 %
 %   [IN]
 %       project_id        :   Project ID foreign key
@@ -43,35 +43,28 @@ catch me
     return
 end
 
-% handle non-optional input args
-if isempty(project_id)
-    fprintf('Project ID can''t be empty.\n');
-    return
-end
-if ~mysql(sprintf('select count(1) from Project where project_id = %d;', project_id))
-    fprintf('Unable to find Project.\n');
-    return
-end
+% parse input args
+p = inputParser;
+p.addRequired('project_id', ...
+    @(pid) mysql(sprintf('select count(1) from Project where project_id = %d;', pid)));
+p.addParameter('experimenter', '', @isstr);
+p.addParameter('description', '', @isstr);
+p.parse(project_id, varargin{:});
+args = p.Results;
 
 % init query elements
 attr = 'project_id';
-vals = ['''', num2str(project_id), ''''];
+vals = ['''', num2str(args.project_id), ''''];
 
 % handle optional input args
-if ~exist('experimenter', 'var')
-    experimenter = '';
-end
-if ~isempty(experimenter)
+if ~isempty(args.experimenter)
     attr = [attr, ', experimenter'];
-    vals = [vals, ', ''', experimenter, ''''];
+    vals = [vals, ', ''', args.experimenter, ''''];
 end
 
-if ~exist('description', 'var')
-    description = '';
-end
-if ~isempty(description)
+if ~isempty(args.description)
     attr = [attr, ', description'];
-    vals = [vals, ', ''', description, ''''];
+    vals = [vals, ', ''', args.description, ''''];
 end
 
 % build insert query
