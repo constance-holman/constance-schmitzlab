@@ -61,7 +61,7 @@ insert_query = sprintf('insert into Project(%s) values (%s);', attr, vals);
 % try to insert into database
 try
     r = evalc('mysql(insert_query)');
-    project_id = mysql(sprintf('select project_id from Project where name=''%s''', name));
+    project_id = mysql('select max(project_id) from Project');
 catch me
     disp(me.message)
 end
