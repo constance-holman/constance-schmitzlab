@@ -1,7 +1,7 @@
 function experiment_id = insert_experiment(project_id, varargin)
 %insert_experiment Insert a new row into the Experiment table.
 %
-%   Syntax: insert_experiment(project_id, 'Experimenter', experimenter, 'Description', description)
+%   Syntax: insert_experiment(project_id, ...)
 %
 %   [IN]
 %       project_id        :   Project ID foreign key
@@ -10,6 +10,8 @@ function experiment_id = insert_experiment(project_id, varargin)
 %
 %   [OUT]
 %       experiment_id   :   Generated unique experiment identifier
+%
+%   Example: exp_id = insert_experiment(1,'Experimenter','User');
 %
 % Copyright (C) 2017  Viktor Bahr (viktor [at] eridian.systems)
 % 
