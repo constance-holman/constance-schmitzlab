@@ -48,7 +48,7 @@ end
 % parse input args
 p = inputParser;
 p.addRequired('project_id', ...
-    @(pid) mysql(sprintf('select count(1) from Project where project_id = %d;', pid)));
+    @(pid) logical(mysql(sprintf('select count(1) from Project where project_id = %d;', pid))));
 p.addParameter('experimenter', '', @isstr);
 p.addParameter('description', '', @isstr);
 p.parse(project_id, varargin{:});

@@ -52,7 +52,7 @@ end
 % parse input args
 p = inputParser;
 p.addRequired('project_id', ...
-    @(pid) mysql(sprintf('select count(1) from Project where project_id = %d;', pid)));
+    @(pid) logical(mysql(sprintf('select count(1) from Project where project_id = %d;', pid))));
 p.addParameter('genotype', '', @isstr);
 p.addParameter('birthdate', '', @isstr);
 p.addParameter('sex', '', @(x) any(strcmpi(x,{'m','f'})));
@@ -76,6 +76,11 @@ if ~isempty(args.birthdate)
     vals = [vals, ', ''', args.birthdate, ''''];
 end
 
+if ~isempty(args.sex)
+    attr = [attr, ', sex'];
+    vals = [vals, ', ''', args.sex, ''''];
+end
+
 if ~isempty(args.name)
     attr = [attr, ', name'];
     vals = [vals, ', ''', args.name, ''''];
@@ -87,7 +92,7 @@ if ~isempty(args.pyrat_id)
 end
 
 % build insert query
-insert_query = sprintf('insert into Experiment(%s) values (%s);', attr, vals);
+insert_query = sprintf('insert into Animal(%s) values (%s);', attr, vals);
 
 % try to insert into database
 try
