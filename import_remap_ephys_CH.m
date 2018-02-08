@@ -21,7 +21,9 @@ end
 if exist('probetype', 'var') && ~isempty(probetype)
     if ~(strcmp(probetype,'4x8LFP') || strcmp(probetype,'poly2')|| strcmp(probetype,'2x8LFP') || strcmp(probetype,'2x16CamNT') ...
         || strcmp(probetype,'poly3') || strcmp(probetype,'CNT64') || strcmp(probetype,  'NNEdge32') || strcmp(probetype, 'poly2optrode')...
-        || strcmp(probetype, 'poly3optrode'))
+        || strcmp(probetype, 'poly3optrode') || strcmp(probetype,'CNT32_Edge2x16') || strcmp(probetype,'CNT32_Parallel2x16')...
+        ||strcmp(probetype,'NN32_Edge1x32') || strcmp(probetype,'NN32_ISO3xtet') || strcmp(probetype,'NN32_Poly2')...
+        || strcmp(probetype,'NN32_Poly3'))
         error('you have entered a probe name that is not recognized, pls change or remove');
     end;
 else
@@ -49,9 +51,9 @@ fullremapfilename = fullfile(remapdir, remapfile);
 fid=fopen(fullremapfilename);
 D = textscan(fid, '%d %d %d %d %d', 'headerlines', 6, 'Delimiter', ';');  %read 5 collumns (for each recsite a probesitenr, adaptorchannr, HSchannr, x-coord, y-coord; first 6 lines are headers so not read here
 if strcmp(recsystype,'Intan')
-    HSchans=D{1,2}';%second collumn holds HSchan nrs 
+    HSchans=D{1,2}';%second collumn holds HSchan nrs  for Intan files
 else
-HSchans=D{1,3}';%third collumn holds HSchan nrs 
+HSchans=D{1,3}';%third collumn holds HSchan nrs for Amplipex files
 end
 fclose(fid);
 
@@ -373,6 +375,15 @@ if savematfile
     save(recmatfilename, 'alldatastruct','-v7.3');      %save newly created struct as mat file.
 end
 
+%% save downsampled version of data in array
+dsdata=[];
+for d=1:size(allchans_raw,1)
+    dsdata(d,:) = downsample(allchans_raw(d,:),20);
+end
+dsmatfilename=[mousename '_rec' num2str(recnr) '_downsampled.mat'];
+if savematfile                  
+    save(dsmatfilename, 'dsdata','-v7.3');      %save newly created struct as mat file.
+end
 %% make plot if requested
 if makeplot
     %get probesitenrs from struct
