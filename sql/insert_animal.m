@@ -53,11 +53,11 @@ end
 p = inputParser;
 p.addRequired('project_id', ...
     @(pid) logical(mysql(sprintf('select count(1) from Project where project_id = %d;', pid))));
-p.addParameter('genotype', '', @isstr);
-p.addParameter('birthdate', '', @isstr);
+p.addParameter('genotype', '', @ischar);
+p.addParameter('birthdate', '', @ischar);
 p.addParameter('sex', '', @(x) any(strcmpi(x,{'m','f'})));
-p.addParameter('name', '', @isstr);
-p.addParameter('pyrat_id', '', @isstr);
+p.addParameter('name', '', @ischar);
+p.addParameter('pyrat_id', '', @ischar);
 p.parse(project_id, varargin{:});
 args = p.Results;
 

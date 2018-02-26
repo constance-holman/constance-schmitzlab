@@ -13,7 +13,7 @@ function experiment_id = insert_experiment(project_id, varargin)
 %
 %   Example: exp_id = insert_experiment(1,'Experimenter','User');
 %
-% Copyright (C) 2017  Viktor Bahr (viktor [at] eridian.systems)
+% Copyright (C) 2018  Viktor Bahr (viktor [at] eridian.systems)
 % 
 % This program is free software: you can redistribute it and/or modify
 % it under the terms of the GNU General Public License as published by
@@ -49,13 +49,13 @@ end
 p = inputParser;
 p.addRequired('project_id', ...
     @(pid) logical(mysql(sprintf('select count(1) from Project where project_id = %d;', pid))));
-p.addParameter('experimenter', '', @isstr);
-p.addParameter('description', '', @isstr);
+p.addParameter('experimenter', '',  @ischar);
+p.addParameter('description', '', @ischar);
 p.parse(project_id, varargin{:});
 args = p.Results;
 
 % init query elements
-attr = 'project_id';
+attr = 'project_id';    
 vals = ['''', num2str(args.project_id), ''''];
 
 % handle optional input args
