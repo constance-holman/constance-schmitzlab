@@ -29,7 +29,17 @@ create_table(db);
 %% insert data
 
 % insert project
-project_id = insert_project('Test');
+project_id = insert_project('Test Project');
+
+% insert experiment
+experiment_id = insert_experiment(project_id, ...
+    'Experimenter', 'Viktor', ...
+    'Description', 'This is a test experiment.');
+
+% insert animal
+animal_id = insert_animal(project_id, ...
+    'Name', 'Animal', ...
+    'Sex', 'm');
 
 % insert amplifier
 amplifier_id = insert_amplifier('Test');
