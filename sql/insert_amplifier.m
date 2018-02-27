@@ -1,17 +1,13 @@
-function project_id = insert_project(name)
-%insert_project Insert a new row into the Project table.
+function amplifier_id = insert_amplifier(name)
+%insert_amplifier Insert a new row into the Amplifier table.
 %
-%   Syntax: insert_project(name)
+%   Syntax: insert_amplifier(name)
 %
 %   [IN]
-%       name        :   Name of the project
+%       name        :   Name of the amplifier
 %
 %   [OUT]
-<<<<<<< HEAD
-%       animal_id   :   Generated unique project identifier
-=======
-%       project_id   :   Generated unique project identifier
->>>>>>> c28f919ddc5d3678ab58f2e3f712bbcdab83b041
+%       amplifier_id   :   Generated unique amplifier identifier
 %
 % Copyright (C) 2017  Viktor Bahr (viktor [at] eridian.systems)
 % 
@@ -36,8 +32,8 @@ try
         return
     end
     tables = mysql('show tables');
-    if ~any(strcmp('Project', tables))
-        fprintf('No Project table found.\n')
+    if ~any(strcmp('Amplifier', tables))
+        fprintf('No Amplifier table found.\n')
         return
     end
 catch me
@@ -47,11 +43,11 @@ end
 
 % handle input args
 if isempty(name)
-    fprintf('Project name can''t be empty.\n');
+    fprintf('Amplifier name can''t be empty.\n');
     return
 end
 if ~ischar(name)
-    fprintf('Project name has to be a string.\n');
+    fprintf('Amplifier name has to be a string.\n');
     return
 end
 
@@ -60,23 +56,19 @@ attr = 'name';
 vals = ['''', name, ''''];
 
 % build insert query
-insert_query = sprintf('insert into Project(%s) values (%s);', attr, vals);
+insert_query = sprintf('insert into Amplifier(%s) values (%s);', attr, vals);
 
 % try to insert into database
 try
     r = evalc('mysql(insert_query)');
-<<<<<<< HEAD
-    project_id = mysql(sprintf('select project_id from Project where name=''%s''', name));
-=======
-    project_id = mysql('select max(project_id) from Project');
->>>>>>> c28f919ddc5d3678ab58f2e3f712bbcdab83b041
+    amplifier_id = mysql(sprintf('select amplifier_id from Amplifier where name=''%s''', name));
 catch me
     disp(me.message)
 end
 
-if ~exist('project_id', 'var') || isempty(project_id)
+if ~exist('amplifier_id', 'var') || isempty(amplifier_id)
     % return failed state flag
-    project_id = -1;
+    amplifier_id = -1;
 end
 
 end

@@ -1,13 +1,5 @@
-<<<<<<< HEAD
-%%import_remap_ephys
-%import data from dat (Amplipex) or rhd (Intan) files
-%
-% last updated July 2017 John Tukker
-
-=======
 %%importDat
 % used to get .dat files from Ampliplex system
->>>>>>> c28f919ddc5d3678ab58f2e3f712bbcdab83b041
 function[allchansreordered]= import_remap_ephys(recsystype, probetype, savematfile, mousenr, recnr, makeplot, plotchnrs)
 
 if exist('recsystype', 'var') && ~isempty(recsystype)
@@ -19,11 +11,7 @@ else
 end
 
 if exist('probetype', 'var') && ~isempty(probetype)
-<<<<<<< HEAD
-    if ~(strcmp(probetype,'4x8LFP') || strcmp(probetype,'poly2')|| strcmp(probetype,'2x8LFP') || strcmp(probetype,'2x16CamNT')  || strcmp(probetype,'poly3') || strcmp(probetype,'CNT64') || strcmp(probetype,  '1x32Edge')||strcmp(probetype,  'CNT32_edge') ||strcmp(probetype,  'CNT64_2shank'))
-=======
     if ~(strcmp(probetype,'4x8LFP') || strcmp(probetype,'poly2')|| strcmp(probetype,'2x8LFP') || strcmp(probetype,'2x16CamNT')  || strcmp(probetype,'poly3')) 
->>>>>>> c28f919ddc5d3678ab58f2e3f712bbcdab83b041
         error('you have entered a probe name that is not recognized, pls change or remove');
     end;
 else
@@ -39,37 +27,15 @@ if strcmp(recsystype, 'amplipex')
     switch probetype
     case '4x8LFP' %A4x8-5mm-100-400-703-A32 ; for 5C18 site 29 is bad, reported impedance 9.75 %mapping to be confirmed
             HSchans = [20,28,27,19,26,29,25,30,24,31,23,32,22,21,18,17,16,15,12,11,1,3,2,14,4,13,5,7,6,9,8,10];
-<<<<<<< HEAD
-    case '2x16CamNT' %parallel configuration (i.e. p58)
-=======
     case '2x16CamNT'
->>>>>>> c28f919ddc5d3678ab58f2e3f712bbcdab83b041
             HSchans = [20,28,27,19,26,29,25,30,24,31,23,32,22,21,18,17,16,15,12,11,1,3,2,14,4,13,5,7,6,9,8,10]; 
     case 'poly3' 
         HSchans = [20,23,10,28,3,8,27,32,9,19,1,6,26,22,7,29,11,5,25,21,13,30,12,4,24,18,14,31,15,2,17,16];
     case '2x8LFP'        
         HSchans = [16,15,12,11,1,3,2,14,4,13,5,7,6,9,8,10];
-<<<<<<< HEAD
-    case 'CNT64'
-          HSchans = [60,59,52,51,64,63,15,16,13,14,12,11,10,9,8,7,55,58,57,50,56,49,51,52,30,54,53,...
-                        4,1,6,5,2,48,45,46,44,47,43,42,3,41,29,40,37,31,28,27,32,38,39,36,35,34,33,17,...
-                        18,19,20,22,21,24,23,26,25];
-          nchans = 65; %patch 29.06.17 by CH
-        case 'CNT32_edge'
-            HSchans = [4,13,5,12,15,6,2,11,14,7,3,10,8,9,16,1,20,29,21,28,31,22,18,27,30,23,19,26,24,25,32,17];
-            nchans = 32;
-        case 'CNT64_2shank'
-            HSchans = [48,46,43,41,37,39,35,31,34,36,38,40,42,44,45,47,21,23,25,30,28,17,19,32,20,18,33,27,29,26,24,22,11,9,7,4,6,15,13,2,14,...
-                16,63,5,3,8,10,12,50,52,53,55,57,59,51,1,64,62,60,58,56,54,51,49];
-            nchans = 65;
-                end
-else
-    switch probetype %only for intan recordings, i.e. no amplipex adaptor!!!
-=======
     end
 else
     switch probetype
->>>>>>> c28f919ddc5d3678ab58f2e3f712bbcdab83b041
     case '4x8LFP' %A4x8-5mm-100-400-703-A32 ; for 5C18 site 29 is bad, reported impedance 9.75
         HSchans = [27,17,22,21,20,26,25,30,29,24,18,19,31,23,16,28,8,13,9,2,7,15,1,0,5,11,12,10,4,14,3,6];
         HSchans = HSchans+1;    %make sure chans are in range 1-32 so can be used as indices
@@ -82,12 +48,7 @@ else
     case 'poly3' 
         nshanks=1;
         sitespershank=32;
-<<<<<<< HEAD
-        HSchans = [0,26,16,4,30,15,3,21,31,12,17,2,5,27,18,11,22,13,10,20,29,14,25,8,6,28,24,1,23,9,7,19];
-        HSchans = HSchans+1;
-=======
         HSchans = [];
->>>>>>> c28f919ddc5d3678ab58f2e3f712bbcdab83b041
     case 'poly2'
         nshanks=1;
         sitespershank=32;
@@ -99,28 +60,8 @@ else
         %HSchans = [1,16,3,14,9,10,8,2,7,15,11,12,6,13,5,4];
         HSchans = [27,17,22,21,20,26,25,30,29,24,18,19,31,23,16,28];
         HSchans = HSchans+1;    %make sure chans are in range 1-32 so can be used as indices
-<<<<<<< HEAD
-    case '1x32Edge'
-        nshanks=1;
-        sitespershank=32;
-        HSchans = [16,6,5,15,4,7,3,8,2,9,1,10,14,13,12,11,22,21,20,19,23,25,24,18,26,17,27,29,28,31,30,32];
-        %HSchans = HSchans+1;    %make sure chans are in range 1-32 so can be used as indices    
-    case 'CNT32_edge'
-            HSchans = [32,31,30,29,17,28,18,27,19,26,20,25,24,23,21,22,1,2,3,4,16,5,15,6,14,7,13,8,9,10,12,11];
-            nshanks=2;
-            sitespershank=16;
-    case 'CNT64'
-          HSchans = [49,44,51,46,53,48,55,50,57,52,59,54,61,60,56,33,40,47,42,38,45,41,43,37,7,36,39,58,34,...
-              63,62,64,27,22,28,29,24,26,20,35,25,30,18,23,31,2,...
-              3,1,16,21,14,19,12,17,10,15,8,13,6,11,4,5,9,32];
-          nshanks = 2;
-          sitespershank = 16;
-    end
-   end
-=======
     end
 end
->>>>>>> c28f919ddc5d3678ab58f2e3f712bbcdab83b041
 
 nsites = length(HSchans);
 
@@ -145,10 +86,6 @@ if strcmp(recsystype, 'intan')
         %[amplifier_data, t_amplifier, aux_input_data, t_aux_input] = read_Intan_RHD2000_file_CH(intanfilesnames{i});
         data = [data, amplifier_data];    %add data, creating one giant matrix
         tdata = [tdata, t_amplifier];
-<<<<<<< HEAD
-        %pulses = [pulses, board_adc_data];
-=======
->>>>>>> c28f919ddc5d3678ab58f2e3f712bbcdab83b041
         pulses = [pulses, board_adc_data];
     end
     %% find missing channels and rearrange data accordingly
@@ -222,25 +159,12 @@ if strcmp(recsystype, 'intan')
 %         plotsegment_probelayout(tseg, datachansreordered_ds_seg, nshanks, sitespershank)
 %     end
 else
-<<<<<<< HEAD
-    %for amplipex, assume data matrix always includes pulse channel 
-    [datfilename, pathname] = uigetfile('*.dat', 'Select .dat file to import', 'MultiSelect', 'off');
-    if isequal(datfilename, 0)
-        error('User selected Cancel');
-    end
-    %nsites = nsites+1;
-    HSchans = [HSchans,nchans]; %add pulsechan nr as last chan for remapping
-
-    a=memmapfile(datfilename,'Format','int16');
-    allchannels=reshape(a.data, nchans, []);
-=======
     %for amplipex, assume data matrix always includes pulse channel  
     nsites = nsites+1;
     HSchans = [HSchans,nchans]; %add pulsechan nr as last chan for remapping
 
     a=memmapfile(filename,'Format','int16');
     allchannels=reshape(a.data, nsites, []);
->>>>>>> c28f919ddc5d3678ab58f2e3f712bbcdab83b041
     allchansreordered = NaN(size(allchannels)); %make new matrix to hold reordered chans
     %for amplipex data, assume there are no missing channels
     for i = 1:nsites 
@@ -324,39 +248,10 @@ for i=1:nsites
 end    
 
 %% save struct in mat file
-<<<<<<< HEAD
-
-% disabled- creates files that are very large
-
-% mousestr = sprintf('A%d', mousenr);
-% recmatfilename=[mousestr '_rec' num2str(recnr) '_ephys_alldatastruct2.mat'];
-% if savematfile                  
-%     save(recmatfilename, 'alldatastruct','-v7.3');      %save newly created struct as mat file.
-% end
-
-%% just save data in mat file
-% added by CH 10.08.17
-
-mousestr = sprintf('L%d', mousenr);
-recmatfilename=sprintf('FullRec_%s_rec1_raw32chan.mat',mousestr,recnr);
-if savematfile                  
-    save(recmatfilename, 'allchans_raw','-v7.3');      %save newly created struct as mat file.
-end
-
-%% make downsampled version of this file
-dsdata=[];
-for f=1:size(allchans_raw,1)
-    dsdata(f,:) = downsample(allchans_raw(f,:),20);
-end
-    dsmatfilename=sprintf('%s_rec1_downsampled.mat',mousestr,recnr);
-if savematfile                  
-    save(dsmatfilename, 'dsdata','-v7.3');      %save newly created struct as mat file.
-=======
 mousestr = sprintf('A%d', mousenr);
 recmatfilename=[mousestr '_rec' num2str(recnr) '_ephys_alldatastruct2.mat'];
 if savematfile                  
     save(recmatfilename, 'alldatastruct','-v7.3');      %save newly created struct as mat file.
->>>>>>> c28f919ddc5d3678ab58f2e3f712bbcdab83b041
 end
 
 %% make plot if requested
@@ -400,8 +295,4 @@ if makeplot
         %plot pulses on different scale, in black
         plot(tdata_ds,rawdata_ds(nsites,:)+3, '-k');
     end
-<<<<<<< HEAD
-end
-=======
->>>>>>> c28f919ddc5d3678ab58f2e3f712bbcdab83b041
 end

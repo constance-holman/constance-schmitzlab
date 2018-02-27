@@ -1,17 +1,13 @@
-function project_id = insert_project(name)
-%insert_project Insert a new row into the Project table.
+function probe_type_id = insert_probetype(type)
+%insert_probetype Insert a new row into the ProbeType table.
 %
-%   Syntax: insert_project(name)
+%   Syntax: insert_probetype(type)
 %
 %   [IN]
-%       name        :   Name of the project
+%       type        :   Name of the probetype
 %
 %   [OUT]
-<<<<<<< HEAD
-%       animal_id   :   Generated unique project identifier
-=======
-%       project_id   :   Generated unique project identifier
->>>>>>> c28f919ddc5d3678ab58f2e3f712bbcdab83b041
+%       probe_type_id   :   Generated unique ProbeType identifier
 %
 % Copyright (C) 2017  Viktor Bahr (viktor [at] eridian.systems)
 % 
@@ -36,8 +32,8 @@ try
         return
     end
     tables = mysql('show tables');
-    if ~any(strcmp('Project', tables))
-        fprintf('No Project table found.\n')
+    if ~any(strcmp('ProbeType', tables))
+        fprintf('No ProbeType table found.\n')
         return
     end
 catch me
@@ -46,37 +42,33 @@ catch me
 end
 
 % handle input args
-if isempty(name)
-    fprintf('Project name can''t be empty.\n');
+if isempty(type)
+    fprintf('ProbeType type can''t be empty.\n');
     return
 end
-if ~ischar(name)
-    fprintf('Project name has to be a string.\n');
+if ~ischar(type)
+    fprintf('ProbeType type has to be a string.\n');
     return
 end
 
 % init query elements
-attr = 'name';
-vals = ['''', name, ''''];
+attr = 'type';
+vals = ['''', type, ''''];
 
 % build insert query
-insert_query = sprintf('insert into Project(%s) values (%s);', attr, vals);
+insert_query = sprintf('insert into ProbeType(%s) values (%s);', attr, vals);
 
 % try to insert into database
 try
     r = evalc('mysql(insert_query)');
-<<<<<<< HEAD
-    project_id = mysql(sprintf('select project_id from Project where name=''%s''', name));
-=======
-    project_id = mysql('select max(project_id) from Project');
->>>>>>> c28f919ddc5d3678ab58f2e3f712bbcdab83b041
+    probe_type_id = mysql(sprintf('select probe_type_id from ProbeType where type=''%s''', type));
 catch me
     disp(me.message)
 end
 
-if ~exist('project_id', 'var') || isempty(project_id)
+if ~exist('probe_type_id', 'var') || isempty(probe_type_id)
     % return failed state flag
-    project_id = -1;
+    probe_type_id = -1;
 end
 
 end
