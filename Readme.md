@@ -23,6 +23,9 @@ It's also kind of a demo repository for learning git - I'll try to keep it as cl
     - ``create_table.m`` wrapper function to create tables, uses variable created by ``init.m``.
     - ``drop_table.m`` wrapper function for dropping tables, also uses variable created by ``init.m``.
     - ``ìnsert_project.m`` wrapper function for inserting a row into the ``Project`` table
+    - ``ìnsert_animal.m`` wrapper function for inserting a row into the ``Animal`` table
+    - ``ìnsert_experiment.m`` wrapper function for inserting a row into the ``Experiment`` table
+    - ``ìnsert_session.m`` wrapper function for inserting a row into the ``Session`` table
     - ``insert_amplifier.m`` wrapper function for inserting a row into the ``Amplifier`` table
     - ``insert_probetype.m`` wrapper function for inserting a row into the ``ProbeType`` table
     - ``database.mwb`` mysql-workbench model of the database; for query creation and visualization.
