@@ -46,8 +46,11 @@ session_id = insert_session(animal_id, experiment_id, ...
     'Type', 'both');
 
 % insert amplifier
-amplifier_id = insert_amplifier('Test');
+amplifier_id = insert_amplifier('Test Amp');
 
 % insert ProbeType
-probe_type_id = insert_probetype('Test');
+probe_type_id = insert_probetype('Test Probe type');
+
+% insert Probe
+probe_id = insert_probe('Test Probe', 'ABCDEFGHIJKLMNOPQRST');
 
