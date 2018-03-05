@@ -1,4 +1,4 @@
-function session_id = insert_session(animal_id, experiment_id, varargin)
+function session_id = insert_session(animal_id, experiment_id, date, varargin)
 %insert_session Insert a new row into the Session table.
 %
 %   Syntax: insert_session(animal_id, experiment_id, ...)
@@ -6,14 +6,14 @@ function session_id = insert_session(animal_id, experiment_id, varargin)
 %   [IN]
 %       animal_id           :   Animal ID foreign key
 %       experiment_id       :   Experiment ID foreign key
-%       date                :   Session start date, default is current date
+%       date                :   Session start date
 %       note                :   (optional) Session notes
 %       type                :   (optional) Session type (behav, rec, both)
 %
 %   [OUT]
 %       session_id          :   Generated unique session identifier
 %
-%   Example: session_id = insert_session(1, 3, 'Date', '13.12.2018', 'Type', 'rec');
+%   Example: session_id = insert_session(1, 3, '13.12.2018', 'Type', 'rec');
 %
 % Copyright (C) 2018  Viktor Bahr (viktor [at] eridian.systems)
 % 
@@ -39,7 +39,7 @@ try
     end
     tables = mysql('show tables');
     if ~any(strcmp('Session', tables))
-        fprintf('No Animal table found.\n')
+        fprintf('No Session table found.\n')
         return
     end
 catch me
@@ -53,10 +53,10 @@ p.addRequired('animal_id', ...
     @(aid) logical(mysql(sprintf('select count(1) from Animal where animal_id = %d;', aid))));
 p.addRequired('experiment_id', ...
     @(eid) logical(mysql(sprintf('select count(1) from Experiment where experiment_id = %d;', eid))));
-p.addParameter('date', datestr(now, 'dd.mm.yyyy'), @isdatestr);
+p.addRequired('date', @isdatestr);
 p.addParameter('note', '', @ischar);
 p.addParameter('type', '', @(x) any(strcmpi(x,{'behav','rec','both'})));
-p.parse(animal_id, experiment_id, varargin{:});
+p.parse(animal_id, experiment_id, date, varargin{:});
 args = p.Results;
 
 % init query elements
