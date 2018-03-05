@@ -48,7 +48,7 @@ if isempty(probe_type_id)
     return
 end
 
-if ~logical(mysql(sprintf('select count(1) from ProbeType where probe_type_id = %d;', probe_type_id)))
+if ~logical(mysql(sprintf('select count(1) from ProbeType where probe_type_id = ''%s'';', probe_type_id)))
     fprintf('Unable to find matching ProbeType ID.\n');
     return
 end
