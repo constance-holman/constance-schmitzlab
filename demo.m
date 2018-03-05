@@ -42,7 +42,7 @@ animal_id = insert_animal(project_id, ...
     'Sex', 'm');
 
 % insert session
-session_id = insert_session(animal_id, experiment_id, ...
+session_id = insert_session(animal_id, experiment_id, '04.11.1950', ...
     'Type', 'both');
 
 % insert amplifier
@@ -53,4 +53,8 @@ probe_type_id = insert_probetype('Test Probe type');
 
 % insert Probe
 probe_id = insert_probe('Test Probe', 'ABCDEFGHIJKLMNOPQRST');
+
+% insert recording
+rec_id = insert_recording(session_id, probe_id, amplifier_id, 100, ...
+    'Note', 'Not deep enough...');
 
