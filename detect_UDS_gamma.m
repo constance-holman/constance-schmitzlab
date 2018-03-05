@@ -8,7 +8,8 @@ function [final_epoch_indices] = detect_UDS_gamma(my_chan,std_thresh,mindur)
   AllThetaNorm, avgd] = Stockwell4Snippet_4CleanData(my_chan,1000,[],[],[],[]);
 
 % find places where gamma power goes above a certain threshold
-event=find(AllMaxGamma > std_thresh*std(AllMaxGamma))';
+%event=find(AllMaxGamma > std_thresh*std(AllMaxGamma))';
+event=find(AllMaxDelta > std_thresh*std(AllMaxDelta));
 
 
             da=find(diff(event) ~= 1)+1; %find discontinuities in speed
