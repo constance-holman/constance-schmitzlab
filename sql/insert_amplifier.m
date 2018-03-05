@@ -61,7 +61,7 @@ insert_query = sprintf('insert into Amplifier(%s) values (%s);', attr, vals);
 % try to insert into database
 try
     r = evalc('mysql(insert_query)');
-    amplifier_id = mysql(sprintf('select amplifier_id from Amplifier where name=''%s''', name));
+    amplifier_id = mysql(sprintf('select max(amplifier_id) from Amplifier where name=''%s''', name));
 catch me
     disp(me.message)
 end

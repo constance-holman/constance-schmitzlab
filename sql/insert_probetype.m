@@ -61,7 +61,7 @@ insert_query = sprintf('insert into ProbeType(%s) values (%s);', attr, vals);
 % try to insert into database
 try
     r = evalc('mysql(insert_query)');
-    probe_type_id = mysql(sprintf('select probe_type_id from ProbeType where type=''%s''', type));
+    probe_type_id = mysql(sprintf('select max(probe_type_id) from ProbeType where type=''%s''', type));
 catch me
     disp(me.message)
 end
