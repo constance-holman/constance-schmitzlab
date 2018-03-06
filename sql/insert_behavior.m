@@ -46,7 +46,7 @@ end
 % parse input args
 p = inputParser;
 p.addRequired('session_id', ...
-    @(sid) isscalar(x) & logical(mysql(sprintf('select count(1) from Session where session_id = %d;', sid))));
+    @(sid) isscalar(sid) & logical(mysql(sprintf('select count(1) from Session where session_id = %d;', sid))));
 p.addRequired('real', @(x) isnumeric(x) & size(x,2) == 2);
 p.addRequired('virtual', @(x) isnumeric(x) & size(x,2) == 2);
 p.addRequired('time', @(x) isnumeric(x) & size(x,2) == 1);
@@ -59,9 +59,9 @@ if size(args.virtual,1) ~= size(args.real,1) || size(args.time,1) ~= size(args.r
 end
 
 % init query elements
-attr = 'session_id, real_x, real_y, virtual_x, virtual_y, time';
+attr = 'session_id, real_x, real_y, virt_x, virt_y, time';
 format = '(%d,%f,%f,%f,%f,%f),';
-tmp = [repmat(args.session_id, 1, size(real, 1)), real', virtual', time'];
+tmp = [repmat(args.session_id, 1, size(real, 1)); real'; virtual'; time'];
 
 % handle optional input args
 if ~isempty(args.end)
@@ -77,7 +77,7 @@ vals = sprintf(format, tmp);
 vals(end) = [];
 
 % build insert query
-insert_query = sprintf('insert into Session(%s) values %s;', attr, vals);
+insert_query = sprintf('insert into Behavior(%s) values %s;', attr, vals);
 
 % try to insert into database
 try
