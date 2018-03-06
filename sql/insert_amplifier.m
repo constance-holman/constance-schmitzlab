@@ -1,10 +1,11 @@
-function amplifier_id = insert_amplifier(name)
+function amplifier_id = insert_amplifier(name, varargin)
 %insert_amplifier Insert a new row into the Amplifier table.
 %
 %   Syntax: insert_amplifier(name)
 %
 %   [IN]
 %       name        :   Name of the amplifier
+%       verbose     :   (optional) Verbosity flag, default true
 %
 %   [OUT]
 %       amplifier_id   :   Generated unique amplifier identifier
@@ -41,18 +42,15 @@ catch me
 end
 
 % handle input args
-if isempty(name)
-    fprintf('Amplifier name can''t be empty.\n');
-    return
-end
-if ~ischar(name)
-    fprintf('Amplifier name has to be a string.\n');
-    return
-end
+p = inputParser;
+p.addRequired('name', @ischar);
+p.addParameter('verbose', true, @islogical);
+p.parse(name, varargin{:});
+args = p.Results;
 
 % init query elements
 attr = 'name';
-vals = ['''', name, ''''];
+vals = ['''', args.name, ''''];
 
 % build insert query
 insert_query = sprintf('insert into Amplifier(%s) values (%s);', attr, vals);
@@ -62,12 +60,13 @@ try
     r = evalc('mysql(insert_query)');
     amplifier_id = mysql(sprintf('select max(amplifier_id) from Amplifier where name=''%s''', name));
 catch me
-    disp(me.message)
+    error(me.message)
 end
 
-if ~exist('amplifier_id', 'var') || isempty(amplifier_id)
-    % return failed state flag
-    amplifier_id = -1;
+if isempty(amplifier_id)
+    error('Unable to insert new Amplifier.');
+elseif args.verbose
+    fprintf('New Amplifier: %s (ID: %d)\n', vals, amplifier_id);
 end
 
 end

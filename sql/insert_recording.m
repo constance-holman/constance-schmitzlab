@@ -9,6 +9,7 @@ function rec_id = insert_recording(session_id, probe_id, amplifier_id, depth, va
 %       amplifier_id        :   Amplifier ID foreign key
 %       depth               :   Depth (in micrometers, from the surface)
 %       note                :   (optional) Recording notes
+%       verbose             :   (optional) Verbosity flag, default true
 %
 %   [OUT]
 %       rec_id          :   Generated unique session identifier
@@ -56,12 +57,13 @@ p.addRequired('amplifier_id', ...
     @(aid) logical(mysql(sprintf('select count(1) from Amplifier where amplifier_id = %d;', aid))));
 p.addRequired('depth', @isnumeric);
 p.addParameter('note', '', @ischar);
+p.addParameter('verbose', true, @islogical);
 p.parse(session_id, probe_id, amplifier_id, depth, varargin{:});
 args = p.Results;
 
 % init query elements
 attr = 'session_id, probe_id, amplifier_id, depth';
-vals = ['''', num2str(args.session_id), ''', ''', num2str(args.probe_id), ''', ''', num2str(args.amplifier_id), ''', ''', num2str(args.depth), ''''];
+vals = [num2str(args.session_id), ', ', num2str(args.probe_id), ', ', num2str(args.amplifier_id), ', ', num2str(args.depth)];
 
 % handle optional input args
 
@@ -78,12 +80,13 @@ try
     r = evalc('mysql(insert_query)');
     rec_id = mysql('select max(rec_id) from Recording');
 catch me
-    disp(me.message)
+    error(me.message)
 end
 
-if ~exist('rec_id', 'var') || isempty(rec_id)
-    % return failed state flag
-    rec_id = -1;
+if isempty(rec_id)
+    error('Unable to insert new Recording.');
+elseif args.verbose
+    fprintf('New Recording: %s (ID: %d)\n', vals, rec_id);
 end
 
 end

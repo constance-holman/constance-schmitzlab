@@ -1,10 +1,11 @@
-function probe_type_id = insert_probetype(type)
+function probe_type_id = insert_probetype(type, varargin)
 %insert_probetype Insert a new row into the ProbeType table.
 %
 %   Syntax: insert_probetype(type)
 %
 %   [IN]
 %       type        :   Name of the probetype
+%       verbose     :   (optional) Verbosity flag, default true
 %
 %   [OUT]
 %       probe_type_id   :   Generated unique ProbeType identifier
@@ -41,18 +42,15 @@ catch me
 end
 
 % handle input args
-if isempty(type)
-    fprintf('ProbeType type can''t be empty.\n');
-    return
-end
-if ~ischar(type)
-    fprintf('ProbeType type has to be a string.\n');
-    return
-end
+p = inputParser;
+p.addRequired('type', @ischar);
+p.addParameter('verbose', true, @islogical);
+p.parse(type, varargin{:});
+args = p.Results;
 
 % init query elements
 attr = 'type';
-vals = ['''', type, ''''];
+vals = ['''', args.type, ''''];
 
 % build insert query
 insert_query = sprintf('insert into ProbeType(%s) values (%s);', attr, vals);
@@ -62,12 +60,13 @@ try
     r = evalc('mysql(insert_query)');
     probe_type_id = mysql(sprintf('select max(probe_type_id) from ProbeType where type=''%s''', type));
 catch me
-    disp(me.message)
+    error(me.message)
 end
 
-if ~exist('probe_type_id', 'var') || isempty(probe_type_id)
-    % return failed state flag
-    probe_type_id = -1;
+if isempty(probe_type_id)
+    error('Unable to insert new ProbeType.');
+elseif args.verbose
+    fprintf('New ProbeType: %s (ID: %d)\n', vals, probe_type_id);
 end
 
 end

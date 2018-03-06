@@ -1,11 +1,12 @@
-function probe_id = insert_probe(probe_type_id, serial)
+function probe_id = insert_probe(probe_type_id, serial, varargin)
 %insert_probe Insert a new row into the Probe table.
 %
 %   Syntax: insert_probe(name)
 %
 %   [IN]
-%       probetype_id   :   ProbeType foreign key
+%       probe_type_id   :   ProbeType foreign key
 %       serial          :   Probe serial number
+%       verbose         :   (optional) Verbosity flag, default true
 %
 %   [OUT]
 %       probe_id    :   Generated unique probe identifier
@@ -42,29 +43,16 @@ catch me
 end
 
 % handle input args
-if isempty(probe_type_id)
-    fprintf('ProbeType ID can''t be empty.\n');
-    return
-end
-
-if ~logical(mysql(sprintf('select count(1) from ProbeType where probe_type_id = ''%s'';', probe_type_id)))
-    fprintf('Unable to find matching ProbeType ID.\n');
-    return
-end
-
-if isempty(serial)
-    fprintf('Serial number can''t be empty.\n');
-    return
-end
-
-if ~ischar(serial)
-    fprintf('Serial number has to be a string.\n');
-    return
-end
+p = inputParser;
+p.addRequired('probe_type_id', @(ptid) logical(mysql(sprintf('select count(1) from ProbeType where probe_type_id = %d;', ptid))));
+p.addRequired('serial', @ischar);
+p.addParameter('verbose', true, @islogical);
+p.parse(probe_type_id, serial, varargin{:});
+args = p.Results;
 
 % init query elements
 attr = 'probe_type_id, serialnum';
-vals = ['''', probe_type_id, ''', ''', serial, ''''];
+vals = [num2str(args.probe_type_id), ', ''', args.serial, ''''];
 
 % build insert query
 insert_query = sprintf('insert into Probe(%s) values (%s);', attr, vals);
@@ -72,14 +60,15 @@ insert_query = sprintf('insert into Probe(%s) values (%s);', attr, vals);
 % try to insert into database
 try
     r = evalc('mysql(insert_query)');
-    probe_id = mysql(sprintf('select max(probe_id) from Probe where serialnum=''%s''', serial));
+    probe_id = mysql(sprintf('select max(probe_id) from Probe where serialnum=''%s''', args.serial));
 catch me
-    disp(me.message)
+    error(me.message)
 end
 
-if ~exist('probe_id', 'var') || isempty(probe_id)
-    % return failed state flag
-    probe_id = -1;
+if isempty(probe_id)
+    error('Unable to insert new Probe.');
+elseif args.verbose
+    fprintf('New Probe: %s (ID: %d)\n', vals, probe_id);
 end
 
 end

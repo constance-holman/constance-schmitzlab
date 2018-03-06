@@ -9,6 +9,7 @@ function insert_behavior(session_id, real, virtual, time, varargin)
 %       virtual             :   Vector (nx2) of [X,Y] virtual animal position
 %       time                :   Vector (nx2) of position timestamps
 %       end                 :   (optional) Vector (nx2) logicals about if end of virtual track is reached
+%       verbose             :   (optional) Verbosity flag, default true
 %
 %   Example: insert_behavior(1, [1,2;1,3;2,6], [10,20;10,30;20,60], [1,2,3]);
 %
@@ -51,6 +52,7 @@ p.addRequired('real', @(x) isnumeric(x) & size(x,2) == 2);
 p.addRequired('virtual', @(x) isnumeric(x) & size(x,2) == 2);
 p.addRequired('time', @(x) isnumeric(x) & size(x,2) == 1);
 p.addParameter('end', '',  @(x) islogical(x) & size(x,2) == 1);
+p.addParameter('verbose', true, @islogical);
 p.parse(session_id, real, virtual, time, varargin{:});
 args = p.Results;
 
@@ -83,7 +85,11 @@ insert_query = sprintf('insert into Behavior(%s) values %s;', attr, vals);
 try
     r = evalc('mysql(insert_query)');
 catch me
-    disp(me.message)
+    error(me.message)
+end
+
+if args.verbose
+    fprintf('New Behavior(s): %d rows\n', size(args.real, 1));
 end
 
 end

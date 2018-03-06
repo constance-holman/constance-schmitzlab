@@ -10,6 +10,7 @@ function animal_id = insert_animal(project_id, varargin)
 %       sex               :   (optional) 'm' for male, 'f' for female  
 %       name              :   (optional) Animal name
 %       pyrat_id          :   (optional) PyRat ID
+%       verbose           :   (optional) Verbosity flag, default true
 %
 %   [OUT]
 %       animal_id   :   Generated unique experiment identifier
@@ -57,12 +58,13 @@ p.addParameter('birthdate', '', @isdatestr);
 p.addParameter('sex', '', @(x) any(strcmpi(x,{'m','f'})));
 p.addParameter('name', '', @ischar);
 p.addParameter('pyrat_id', '', @ischar);
+p.addParameter('verbose', true, @islogical);
 p.parse(project_id, varargin{:});
 args = p.Results;
 
 % init query elements
 attr = 'project_id';
-vals = ['''', num2str(args.project_id), ''''];
+vals = [num2str(args.project_id)];
 
 % handle optional input args
 if ~isempty(args.genotype)
@@ -98,12 +100,13 @@ try
     r = evalc('mysql(insert_query)');
     animal_id = mysql('select max(animal_id) from Animal');
 catch me
-    disp(me.message)
+    error(me.message)
 end
 
-if ~exist('animal_id', 'var') || isempty(animal_id)
-    % return failed state flag
-    animal_id = -1;
+if isempty(animal_id)
+    error('Unable to insert new Animal.');
+elseif args.verbose
+    fprintf('New Animal: %s (ID: %d)\n', vals, animal_id);
 end
 
 end

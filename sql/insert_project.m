@@ -1,10 +1,11 @@
-function project_id = insert_project(name)
+function project_id = insert_project(name, varargin)
 %insert_project Insert a new row into the Project table.
 %
 %   Syntax: insert_project(name)
 %
 %   [IN]
 %       name        :   Name of the project
+%       verbose     :   (optional) Verbosity flag, default true
 %
 %   [OUT]
 %       project_id   :   Generated unique project identifier
@@ -41,18 +42,15 @@ catch me
 end
 
 % handle input args
-if isempty(name)
-    fprintf('Project name can''t be empty.\n');
-    return
-end
-if ~ischar(name)
-    fprintf('Project name has to be a string.\n');
-    return
-end
+p = inputParser;
+p.addRequired('name', @ischar);
+p.addParameter('verbose', true, @islogical);
+p.parse(name, varargin{:});
+args = p.Results;
 
 % init query elements
 attr = 'name';
-vals = ['''', name, ''''];
+vals = ['''', args.name, ''''];
 
 % build insert query
 insert_query = sprintf('insert into Project(%s) values (%s);', attr, vals);
@@ -62,12 +60,13 @@ try
     r = evalc('mysql(insert_query)');
     project_id = mysql('select max(project_id) from Project');
 catch me
-    disp(me.message)
+    error(me.message);
 end
 
-if ~exist('project_id', 'var') || isempty(project_id)
-    % return failed state flag
-    project_id = -1;
+if isempty(project_id)
+    error('Unable to insert new Project.');
+elseif args.verbose
+    fprintf('New Project: %s (ID: %d)\n', vals, project_id);
 end
-
+    
 end

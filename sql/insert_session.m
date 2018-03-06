@@ -9,6 +9,7 @@ function session_id = insert_session(animal_id, experiment_id, date, varargin)
 %       date                :   Session start date
 %       note                :   (optional) Session notes
 %       type                :   (optional) Session type (behav, rec, both)
+%       verbose             :   (optional) Verbosity flag, default true
 %
 %   [OUT]
 %       session_id          :   Generated unique session identifier
@@ -55,12 +56,13 @@ p.addRequired('experiment_id', ...
 p.addRequired('date', @isdatestr);
 p.addParameter('note', '', @ischar);
 p.addParameter('type', '', @(x) any(strcmpi(x,{'behav','rec','both'})));
+p.addParameter('verbose', true, @islogical);
 p.parse(animal_id, experiment_id, date, varargin{:});
 args = p.Results;
 
 % init query elements
 attr = 'animal_id, experiment_id, start_date';
-vals = ['''', num2str(args.animal_id), ''', ''', num2str(args.experiment_id), ''', ''', args.date, ''''];
+vals = [num2str(args.animal_id), ', ', num2str(args.experiment_id), ', ''', args.date, ''''];
 
 % handle optional input args
 
@@ -82,11 +84,12 @@ try
     r = evalc('mysql(insert_query)');
     session_id = mysql('select max(session_id) from Session');
 catch me
-    disp(me.message)
+    error(me.message)
 end
 
-if ~exist('session_id', 'var') || isempty(session_id)
-    % return failed state flag
-    session_id = -1;
+if isempty(session_id)
+    error('Unable to insert new Session.');
+elseif args.verbose
+    fprintf('New Session: [%s] (ID: %d)\n', vals, session_id);
 end
 end

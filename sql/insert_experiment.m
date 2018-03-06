@@ -7,6 +7,7 @@ function experiment_id = insert_experiment(project_id, varargin)
 %       project_id        :   Project ID foreign key
 %       experimenter      :   (optional) Name of the person conducting the experiment
 %       description       :   (optional) Experiment description
+%       verbose           :   (optional) Verbosity flag, default true
 %
 %   [OUT]
 %       experiment_id   :   Generated unique experiment identifier
@@ -50,12 +51,13 @@ p.addRequired('project_id', ...
     @(pid) logical(mysql(sprintf('select count(1) from Project where project_id = %d;', pid))));
 p.addParameter('experimenter', '',  @ischar);
 p.addParameter('description', '', @ischar);
+p.addParameter('verbose', true, @islogical);
 p.parse(project_id, varargin{:});
 args = p.Results;
 
 % init query elements
 attr = 'project_id';    
-vals = ['''', num2str(args.project_id), ''''];
+vals = [num2str(args.project_id)];
 
 % handle optional input args
 if ~isempty(args.experimenter)
@@ -76,11 +78,12 @@ try
     r = evalc('mysql(insert_query)');
     experiment_id = mysql('select max(experiment_id) from Experiment');
 catch me
-    disp(me.message)
+    error(me.message);
 end
 
-if ~exist('experiment_id', 'var') || isempty(experiment_id)
-    % return failed state flag
-    experiment_id = -1;
+if isempty(experiment_id)
+    error('Unable to insert new Experiment.');
+elseif args.verbose
+    fprintf('New Experiment: %s (ID: %d)\n', vals, experiment_id);
 end
 end
