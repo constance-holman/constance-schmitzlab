@@ -54,6 +54,10 @@ insert_stereotactic(animal_id, ...
 session_id = insert_session(animal_id, experiment_id, '04.11.1950', ...
     'Type', 'both');
 
+% insert behavior
+insert_behavior(session_id, [1,2;1,3;2,6], [10,20;10,30;20,60], [1;2;3], ...
+    'End', [false;false;true]);
+
 % insert amplifier
 amplifier_id = insert_amplifier('Test Amp');
 
@@ -66,4 +70,5 @@ probe_id = insert_probe('Test Probe', 'ABCDEFGHIJKLMNOPQRST');
 % insert recording
 rec_id = insert_recording(session_id, probe_id, amplifier_id, 100, ...
     'Note', 'Not deep enough...');
+
 
