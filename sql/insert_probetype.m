@@ -37,8 +37,7 @@ try
         return
     end
 catch me
-    disp(me.message);
-    return
+    error(me.message);
 end
 
 % handle input args
