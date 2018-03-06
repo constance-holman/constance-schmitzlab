@@ -44,6 +44,9 @@ animal_id = insert_animal(project_id, ...
     'Name', 'Test Animal', ...
     'Sex', 'm');
 
+% insert stereotactic injection
+insert_s
+
 % insert session
 session_id = insert_session(animal_id, experiment_id, '04.11.1950', ...
     'Type', 'both');
