@@ -54,7 +54,7 @@ p = inputParser;
 p.addRequired('project_id', ...
     @(pid) logical(mysql(sprintf('select count(1) from Project where project_id = %d;', pid))));
 p.addParameter('genotype', '', @ischar);
-p.addParameter('birthdate', '', @ischar);
+p.addParameter('birthdate', '', @isdatestr);
 p.addParameter('sex', '', @(x) any(strcmpi(x,{'m','f'})));
 p.addParameter('name', '', @ischar);
 p.addParameter('pyrat_id', '', @ischar);
@@ -106,4 +106,5 @@ if ~exist('animal_id', 'var') || isempty(animal_id)
     % return failed state flag
     animal_id = -1;
 end
+
 end

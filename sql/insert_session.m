@@ -90,17 +90,4 @@ if ~exist('session_id', 'var') || isempty(session_id)
     % return failed state flag
     session_id = -1;
 end
-
-    % validate date string
-    function valid = isdatestr(str)
-        if regexp(str, '^(0[1-9]|[12][0-9]|3[01])[- /.](0[1-9]|1[012])[- /.](19|20)\d\d$') % dd.mm.yyyy
-            valid = 1;
-        elseif regexp(str, '^(0[1-9]|1[012])[- /.](0[1-9]|[12][0-9]|3[01])[- /.](19|20)\d\d$') % mm.dd.yyyy
-            valid = 1;
-        elseif regexp(str, '^(19|20)\d\d[- /.](0[1-9]|1[012])[- /.](0[1-9]|[12][0-9]|3[01])$') % yyyy.mm.dd
-            valid = 1;
-        else 
-            valid = 0;
-        end
-    end
 end
