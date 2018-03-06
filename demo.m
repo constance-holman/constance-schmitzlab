@@ -65,7 +65,7 @@ amplifier_id = insert_amplifier('Test Amp');
 probe_type_id = insert_probetype('Test Probe type');
 
 % insert Probe
-probe_id = insert_probe('Test Probe', 'ABCDEFGHIJKLMNOPQRST');
+probe_id = insert_probe(probe_type_id, 'ABCDEFGHIJKLMNOPQRST');
 
 % insert recording
 rec_id = insert_recording(session_id, probe_id, amplifier_id, 100, ...
