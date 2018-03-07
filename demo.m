@@ -61,6 +61,9 @@ insert_behavior(session_id, [1,2;1,3;2,6], [10,20;10,30;20,60], [1;2;3], ...
 % insert reward type
 reward_type_id = insert_rewardtype('Sugar', 'positive');
 
+% insert reward
+insert_reward(session_id, reward_type_id, [1;100;1000]);
+
 % insert amplifier
 amplifier_id = insert_amplifier('Test Amp');
 
