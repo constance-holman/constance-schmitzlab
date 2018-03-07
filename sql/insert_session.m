@@ -90,6 +90,6 @@ end
 if isempty(session_id)
     error('Unable to insert new Session.');
 elseif args.verbose
-    fprintf('New Session: [%s] (ID: %d)\n', vals, session_id);
+    fprintf('New Session: %s (ID: %d)\n', vals, session_id);
 end
 end
