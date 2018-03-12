@@ -12,9 +12,6 @@ mysql('use', name);
 % add sql folder to path
 addpath('sql/');
 
-% add parsing folder to path
-addpath('parsing/');
-
 % init create queries
 run('init.m');
 
