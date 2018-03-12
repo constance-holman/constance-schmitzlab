@@ -3,7 +3,8 @@
 % during laser stim
 
 laser_chan = dsdata(33,:);
-snip_lims = [6.8e5:8.8e5];
+snip_lims = [9.2e5:10.7e5];
+%snip_lims = 1:length(laser_chan);
 %my_chan = dsdata(1,:);
 my_chan = dsdata(1,snip_lims);
 
