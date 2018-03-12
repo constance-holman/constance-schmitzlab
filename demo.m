@@ -84,4 +84,7 @@ insert_remapping(probe_type_id, amplifier_id, ...
 rec_id = insert_recording(session_id, probe_id, amplifier_id, 100, ...
     'Note', 'Not deep enough...');
 
+% insert histology
+histology_id = insert_histology(rec_id, 'Fuchsia', 'COX');
+
 
