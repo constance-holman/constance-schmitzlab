@@ -7,11 +7,11 @@ function insert_behavior(session_id, real, virtual, time, varargin)
 %       session_id          :   Session ID foreign key
 %       real                :   Vector (nx2) of [X,Y] real animal position
 %       virtual             :   Vector (nx2) of [X,Y] virtual animal position
-%       time                :   Vector (nx2) of position timestamps
-%       end                 :   (optional) Vector (nx2) logicals about if end of virtual track is reached
+%       time                :   Vector (nx1) of position timestamps
+%       end                 :   (optional) Vector (nx1) logicals about if end of virtual track is reached
 %       verbose             :   (optional) Verbosity flag, default true
 %
-%   Example: insert_behavior(1, [1,2;1,3;2,6], [10,20;10,30;20,60], [1,2,3]);
+%   Example: insert_behavior(1, [1,2;1,3;2,6], [10,20;10,30;20,60], [1;2;3]);
 %
 % Copyright (C) 2018  Viktor Bahr (viktor [at] eridian.systems)
 % 
@@ -63,7 +63,7 @@ end
 % init query elements
 attr = 'session_id, real_x, real_y, virt_x, virt_y, time';
 format = '(%d,%f,%f,%f,%f,%f),';
-tmp = [repmat(args.session_id, 1, size(real, 1)); real'; virtual'; time'];
+tmp = [repmat(args.session_id, 1, size(args.real, 1)); args.real'; args.virtual'; args.time'];
 
 % handle optional input args
 if ~isempty(args.end)
