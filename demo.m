@@ -67,11 +67,21 @@ insert_reward(session_id, reward_type_id, [1;100;1000]);
 % insert amplifier
 amplifier_id = insert_amplifier('Test Amp');
 
-% insert ProbeType
+% insert probe type
 probe_type_id = insert_probetype('Test Probe type');
 
-% insert Probe
+% insert probe
 probe_id = insert_probe(probe_type_id, 'ABCDEFGHIJKLMNOPQRST');
+
+% insert shank
+shank_id = insert_shank(probe_id, 'Sites', 20);
+
+% insert site positions
+insert_sitepos(shank_id, [1,1;2,1;3,1], [1;2;3]);
+
+% insert remapping
+insert_remapping(probe_type_id, amplifier_id, ...
+    'Probe', [1;2;3], 'Headstage', [4;7;9]);
 
 % insert recording
 rec_id = insert_recording(session_id, probe_id, amplifier_id, 100, ...
