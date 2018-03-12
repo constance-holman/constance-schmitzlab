@@ -87,4 +87,7 @@ rec_id = insert_recording(session_id, probe_id, amplifier_id, 100, ...
 % insert histology
 histology_id = insert_histology(rec_id, 'Fuchsia', 'COX');
 
+% insert anatomy
+insert_anatomy(histology_id, [0.7; 1.0], {'vhc'; 'fi'}, [1; 2])
+
 
