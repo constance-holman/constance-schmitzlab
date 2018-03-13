@@ -1,16 +1,16 @@
-function insert_anatomy(histology_id, score, location, channel, varargin)
+function insert_anatomy(histology_id, location, channel, varargin)
 %insert_anatomy Insert a new row into the Anatomy table.
 %
 %   Syntax: insert_anatomy(histology_id, score, location, channel, ...)
 %
 %   [IN]
 %       histology_id        :   Histology ID foreign key
-%       score               :   Vector (nx1) of location certainty (float)
 %       location            :   Cell (nx1) anatomical location name
 %       channel             :   Vector (nx1) channel numbers (int)
+%       score               :   (optional) Vector (nx1) of location certainty (float)
 %       verbose             :   (optional) Verbosity flag, default true
 %
-%   Example: insert_anatomy(1, [0.7; 1.0], {'vhc'; 'fi'}, [1; 2]);
+%   Example: insert_anatomy(1, {'vhc'; 'fi'}, [1; 2]);
 %
 % Copyright (C) 2018  Viktor Bahr (viktor [at] eridian.systems)
 % 
@@ -47,26 +47,34 @@ end
 p = inputParser;
 p.addRequired('histology_id', ...
     @(hid) isscalar(hid) & logical(mysql(sprintf('select count(1) from Histology where histology_id = %d;', hid))));
-p.addRequired('score', @(x) isnumeric(x) & size(x,2) == 1);
 p.addRequired('location', @(x) iscellstr(x) & size(x,2) == 1);
 p.addRequired('channel', @(x) isnumeric(x) & size(x,2) == 1);
+p.addParameter('score', [], @(x) isnumeric(x) & size(x,2) == 1);
 p.addParameter('verbose', true, @islogical);
-p.parse(histology_id, score, location, channel, varargin{:});
+p.parse(histology_id, location, channel, varargin{:});
 args = p.Results;
 
-if size(args.score, 1) ~= size(args.location, 1) || ...
-        size(args.score,1) ~= size(args.channel, 1)
+if size(args.channel, 1) ~= size(args.location, 1)
     error('Vector length not equal.');
 end
 
 % init query elements
-attr = 'histology_id, score, location, channel';
-format = '(%d,%f,''%s'',%d),';
-vals = [];
+attr = 'histology_id, location, channel';
+format = '(%d,''%s'',%d),';
+tmp = [num2cell(repmat(args.histology_id, 1, size(args.location,1))); ...
+    args.location'; ...
+    num2cell(args.channel')];
 
-for i = 1:size(args.score, 1)
-    vals = [vals, sprintf(format, args.histology_id, args.score(i), args.location{i}, args.channel(i))];
+if ~isempty(args.score)
+    if size(args.score, 1) ~= size(args.channel, 1)
+        error('Vector length not equal.');
+    end
+    attr = [attr, ', score'];
+    format = '(%d,''%s'',%d,%f),';
+    tmp = [tmp; num2cell(score')];
 end
+
+vals = sprintf(format, tmp{:});
 vals(end) = [];
 
 % build insert query
@@ -80,7 +88,7 @@ catch me
 end
 
 if args.verbose
-    fprintf('New Anatomy(s): %d rows\n', size(args.score, 1));
+    fprintf('New Anatomy(s): %d rows\n', size(args.channel, 1));
 end
 
 end
