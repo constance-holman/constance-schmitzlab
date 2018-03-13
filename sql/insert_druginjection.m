@@ -51,7 +51,7 @@ p.addRequired('rec_id', ...
 p.addRequired('drug', @ischar);
 p.addRequired('time', @(x) isnumeric(x) & size(x,2) == 1);
 p.addParameter('volume', [],  @(x) isnumeric(x) & size(x,2) == 1);
-p.addParameter('type', '', @(x) isscalar(x) & any(strcmpi(x,{'ip','ic','sc','im'})));
+p.addParameter('type', '', @(x) size(x,1)==1 & any(strcmpi(x,{'ip','ic','sc','im'})));
 p.addParameter('verbose', true, @islogical);
 p.parse(rec_id, drug, time, varargin{:});
 args = p.Results;
