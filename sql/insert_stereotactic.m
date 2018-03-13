@@ -6,10 +6,11 @@ function insert_stereotactic(animal_id, varargin)
 %   [IN]
 %       animal_id       :   Animal ID foreign key
 %       virus           :   (optional) Name of injected virus
-%       position        :   (optional) Vector of [X,Y] position of injection
+%       position        :   (optional) Vector (1x2) of [X,Y] position of injection
 %       date            :   (optional) Date of injection
 %       volume          :   (optional) Injected volume
 %       target          :   (optional) Injection target
+%       verbose         :   (optional) Verbosity flag, default true
 %
 %   Example: insert_stereotactic(1, 'Virus', 'Rabies', 'Date', '01.01.2019');
 %
@@ -41,7 +42,8 @@ try
         return
     end
 catch me
-    error(me.message);
+    disp(me.message);
+    return
 end
 
 
@@ -50,16 +52,17 @@ p = inputParser;
 p.addRequired('animal_id', ...
     @(aid) logical(mysql(sprintf('select count(1) from Animal where animal_id = %d;', aid))));
 p.addParameter('virus', '', @ischar);
-p.addParameter('position', '', @(x) isnumeric(x) & isvector(x) & numel(x)==2);
+p.addParameter('position', '', @(x) isnumeric(x) & numel(x)==2);
 p.addParameter('date', '', @isdatestr);
 p.addParameter('volume', '', @isnumeric);
 p.addParameter('target', '', @ischar);
+p.addParameter('verbose', true, @islogical);
 p.parse(animal_id, varargin{:});
 args = p.Results;
 
 % init query elements
 attr = 'animal_id';
-vals = ['''', num2str(args.animal_id), ''''];
+vals = [num2str(args.animal_id)];
 
 % handle optional input args
 if ~isempty(args.virus)
@@ -69,7 +72,7 @@ end
 
 if ~isempty(args.position)
     attr = [attr, ', x_coord, y_coord'];
-    vals = [vals, ', ''', num2str(args.position(1)), ''', ''', num2str(args.position(2)), ''''];
+    vals = [vals, ', ', num2str(args.position(1)), ', ', num2str(args.position(2))];
 end
 
 if ~isempty(args.date)
@@ -79,7 +82,7 @@ end
 
 if ~isempty(args.volume)
     attr = [attr, ', volume'];
-    vals = [vals, ', ''', num2str(args.volume), ''''];
+    vals = [vals, ', ', num2str(args.volume)];
 end
 
 if ~isempty(args.target)
@@ -94,7 +97,11 @@ insert_query = sprintf('insert into StereotacticInjection(%s) values (%s);', att
 try
     r = evalc('mysql(insert_query)');
 catch me
-    disp(me.message)
+    error(me.message)
+end
+
+if args.verbose
+    fprintf('New StereotacticInjection: %s\n', vals);
 end
 
 end
