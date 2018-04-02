@@ -1,7 +1,7 @@
 %% connection
 
 % insert your name here
-name = '';
+name = 'viktor';
 
 % connect to database
 mysql('open','mysql', name, name);
@@ -11,6 +11,10 @@ mysql('use', name);
 
 % add sql folder to path
 addpath('sql/');
+% add remapping folder to path
+addpath('proberemapping/');
+% add remapping folder to path
+addpath('histo/');
 
 % init create queries
 run('init.m');
@@ -26,42 +30,7 @@ drop_table(db);
 % create tables
 create_table(db);
 
-%% insert toy data
-
-% insert project
-project_id = insert_project('Test Project');
-
-% insert experiment
-experiment_id = insert_experiment(project_id, ...
-    'Experimenter', name, ...
-    'Description', 'This is a test experiment.');
-
-% insert animal
-animal_id = insert_animal(project_id, ...
-    'Name', 'Test Animal', ...
-    'Sex', 'm');
-
-% insert stereotactic injection
-insert_stereotactic(animal_id, ...
-    'Date', '13.12.2018', ...
-    'Virus', 'Test Virus', ...
-    'Position', [100, 50]);
-
-% insert session
-session_id = insert_session(animal_id, experiment_id, '04.11.1950', ...
-    'Type', 'both');
-
-% insert behavior
-insert_behavior(session_id, [1,2;1,3;2,6], [10,20;10,30;20,60], [1;2;3], ...
-    'End', [false;false;true]);
-
-% insert reward type
-reward_type_id = insert_rewardtype('Sugar', 'positive');
-
-% insert reward
-insert_reward(session_id, reward_type_id, [1;100;1000]);
-
-%% insert real metadata
+%% insert metadata
 
 % insert amplifiers
 amp.Amplipex = insert_amplifier('Amplipex');
@@ -103,40 +72,42 @@ insert_remapping(probe.NN32_poly2, amp.Amplipex, ...
 [shank,probechan,connectorchan,headstagechan,x,y] = import_remapping('ProbeRemapping_NN32_Poly3_Amplipex.csv');
 insert_remapping(probe.NN32_poly3, amp.Amplipex, ...
     'Probe', probechan, 'Headstage', headstagechan, 'Connector', connectorchan);
-%%
 
 % insert probe
-probe_id = insert_probe(probe.NN4x8, 'ABCDEFGHIJKLMNOPQRST');
-
-% insert shank
-shank_id = insert_shank(probe_id, 'Sites', 20);
-
-% insert site positions
-insert_sitepos(shank_id, [1,1;2,1;3,1], [1;2;3]);
+% probe info from header of histology CSV, parse that too?
+probe_id = insert_probe(probe.NN32_edge, '92C9');
 
 
+%% insert data set
 
-%% insert recording
-rec_id = insert_recording(session_id, probe_id, amp.Amplipex, 100, ...
-    'Note', 'Not deep enough...');
+% insert project
+project_id = insert_project('Test Project');
+
+% insert experiment
+experiment_id = insert_experiment(project_id, ...
+    'Experimenter', 'JT', ...
+    'Description', 'This is a test experiment.');
+
+% insert animal
+animal_id = insert_animal(project_id, ...
+    'Name', 'M17', ...
+    'Sex', 'm');
+
+% insert session
+session_id = insert_session(animal_id, experiment_id, '06.06.2015', ...
+    'Type', 'both');
+
+% insert recording
+% depth unknown...
+rec_id  = insert_recording(session_id, probe_id, amp.Amplipex, 0);
 
 % insert histology
-histology_id = insert_histology(rec_id, 'Fuchsia', 'COX');
+% TODO: What dye / staining? Unable to find any info on this in the CSVs
+histology_id = insert_histology(rec_id, 'Unknown', 'Unknown');
 
-% insert anatomy
-insert_anatomy(histology_id, {'vhc'; 'fi'}, [1; 2])
+% import and insert anatomy
+[shank, channel, anatomy] = import_histology('M17_rec1_recsiteanatlocs.csv');
+insert_anatomy(histology_id, anatomy, channel);
 
-% insert drug injection
-insert_druginjection(rec_id, 'Lidocain', [1;100;1000]);
 
-% insert electro stimulation
-insert_electrostim(rec_id, [100;200;300], [0.5;0.3;0.5]);
-
-% insert optogenetic stimulation
-insert_optostim(rec_id, [100;200;300], [650;650;650]);
-
-% insert ephys data
-insert_lfp(rec_id, [1;1;1], [100;200;300], [0.3;0.4;0.5]);
-insert_juxta(rec_id, 'rec', [100;200;300], [0.3;0.4;0.5]);
-insert_patch(rec_id, 'rec', [100;200;300], [0.3;0.4;0.5])
 
