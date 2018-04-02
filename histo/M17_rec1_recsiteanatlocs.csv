@@ -1,0 +1,36 @@
+"Anatomical mapping for M17 rec1 in MEC with probe 92C9 (Neuronexus probe A1x32-Edge-5mm-20-177-A32)"  
+"Note on anat loc assignment for this rec: track quite clear, edge of brain not clear; layer identities are estimated very roughly by JT on 22.12.2017 from single sag image estimated from Paxinos ML 3.00mm, DV tip 2.5, AP tip 5.2 "  
+"Standard info on channel nrs and ordering: we assume remapped channels, numbered by site location, ie from site closest to headstage (=1) to tip (=32); for multiple shanks this order is maintained for each shank  "  
+"Shank nr" "chan nr" "anat loc"
+1 1 V1
+1 2 V1
+1 3 V1
+1 4 V1
+1 5 V1
+1 6 MECL3
+1 7 MECL3
+1 8 MECL3
+1 9 MECL3
+1 10 MECL3
+1 11 MECL3
+1 12 MECL3
+1 13 MECL3
+1 14 MECL3
+1 15 MECL3
+1 16 MECL3
+1 17 MECL2
+1 18 MECL2
+1 19 MECL2
+1 20 MECL2
+1 21 MECL2
+1 22 MECL2
+1 23 MECL2
+1 24 MECL2
+1 25 MECL2
+1 26 MECL2
+1 27 MECL2
+1 28 MECL1
+1 29 MECL1
+1 30 MECL1
+1 31 MECL1
+1 32 MECL1
