@@ -63,21 +63,46 @@ insert_reward(session_id, reward_type_id, [1;100;1000]);
 
 %% insert real metadata
 
-% insert amplifier
+% insert amplifiers
 amp.Amplipex = insert_amplifier('Amplipex');
 amp.Intan = insert_amplifier('Intan');
 
-% insert probe type
-probe.NN4x8 = insert_probetype('NN32_4x8LFP');
-probe.NN2x8 = insert_probetype('NN32_2x8LFP');
-probe.CNT32 = insert_probetype('CNT32_Edge2x16');
-probe.NNpoly2 = insert_probetype('NN32_poly2');
-probe.NNpoly3 = insert_probetype('NN32_poly3');
-probe.NN32edge = insert_probetype('NN32_Edge1x32');
-probe.NN32poly2opto = insert_probetype('NN32_poly2optrode');
-probe.NN32poly3opto = insert_probetype('NN32_poly3optrode');
-probe.NN32ISO3 = insert_probetype('NN32_ISO3xtet');
+% insert probe types
+probe.NN32_4x8 = insert_probetype('NN32_4x8LFP');
+probe.NN32_2x8 = insert_probetype('NN32_2x8LFP');
+probe.CNT32_edge = insert_probetype('CNT32_Edge2x16');
+probe.CNT32_parallel = insert_probetype('CNT32_Parallel2x16');
+probe.NN32_poly2 = insert_probetype('NN32_poly2');
+probe.NN32_poly3 = insert_probetype('NN32_poly3');
+probe.NN32_edge = insert_probetype('NN32_Edge1x32');
+probe.NN32_poly2opto = insert_probetype('NN32_poly2optrode');
+probe.NN32_poly3opto = insert_probetype('NN32_poly3optrode');
+probe.NN32_ISO3 = insert_probetype('NN32_ISO3xtet');
 
+% import and insert remappings
+[shank,probechan,connectorchan,headstagechan,x,y] = import_remapping('ProbeRemapping_CNT32_Edge2x16_Amplipex.csv');
+insert_remapping(probe.CNT32_edge, amp.Amplipex, ...
+    'Probe', probechan, 'Headstage', headstagechan, 'Connector', connectorchan);
+
+[shank,probechan,connectorchan,headstagechan,x,y] = import_remapping('ProbeRemapping_CNT32_Parallel2x16_Amplipex.csv');
+insert_remapping(probe.CNT32_parallel, amp.Amplipex, ...
+    'Probe', probechan, 'Headstage', headstagechan, 'Connector', connectorchan);
+
+[shank,probechan,connectorchan,headstagechan,x,y] = import_remapping('ProbeRemapping_NN32_Edge1x32_Amplipex.csv');
+insert_remapping(probe.NN32_edge, amp.Amplipex, ...
+    'Probe', probechan, 'Headstage', headstagechan, 'Connector', connectorchan);
+
+[shank,probechan,connectorchan,headstagechan,x,y] = import_remapping('ProbeRemapping_NN32_ISO3xtet_Intan.csv');
+insert_remapping(probe.NN32_ISO3, amp.Intan, ...
+    'Probe', probechan, 'Headstage', headstagechan, 'Connector', connectorchan);
+
+[shank,probechan,connectorchan,headstagechan,x,y] = import_remapping('ProbeRemapping_NN32_Poly2_Amplipex.csv');
+insert_remapping(probe.NN32_poly2, amp.Amplipex, ...
+    'Probe', probechan, 'Headstage', headstagechan, 'Connector', connectorchan);
+
+[shank,probechan,connectorchan,headstagechan,x,y] = import_remapping('ProbeRemapping_NN32_Poly3_Amplipex.csv');
+insert_remapping(probe.NN32_poly3, amp.Amplipex, ...
+    'Probe', probechan, 'Headstage', headstagechan, 'Connector', connectorchan);
 %%
 
 % insert probe
@@ -89,11 +114,9 @@ shank_id = insert_shank(probe_id, 'Sites', 20);
 % insert site positions
 insert_sitepos(shank_id, [1,1;2,1;3,1], [1;2;3]);
 
-% insert remapping
-insert_remapping(probe.NN4x8, amp.Amplipex, ...
-    'Probe', [1;2;3], 'Headstage', [4;7;9]);
 
-% insert recording
+
+%% insert recording
 rec_id = insert_recording(session_id, probe_id, amp.Amplipex, 100, ...
     'Note', 'Not deep enough...');
 
