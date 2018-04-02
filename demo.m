@@ -1,7 +1,7 @@
 %% connection
 
 % insert your name here
-name = 'viktor';
+name = '';
 
 % connect to database
 mysql('open','mysql', name, name);
