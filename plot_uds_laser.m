@@ -3,8 +3,8 @@
 % during laser stim
 
 laser_chan = dsdata(33,:);
-snip_lims = [9.2e5:10.7e5];
-%snip_lims = 1:length(laser_chan);
+%snip_lims = [9.2e5:10.7e5];
+snip_lims = 1:length(laser_chan);
 %my_chan = dsdata(1,:);
 my_chan = dsdata(1,snip_lims);
 
@@ -18,6 +18,12 @@ my_chan = dsdata(1,snip_lims);
 %linkaxes(ha, 'x');
 
 epoch_indices = detect_UDS_gamma(my_chan',2,100);
+%%
+d = designfilt('bandstopiir','FilterOrder',6, ...
+               'HalfPowerFrequency1',49,'HalfPowerFrequency2',51, ...
+               'DesignMethod','butter','SampleRate',1000);
+           
+          my_chan_filt = filtfilt(d,my_chan);
 %%
 figure
 ha(1)=subplot(2,1,1)

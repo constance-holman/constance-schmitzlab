@@ -23,7 +23,7 @@ if exist('probetype', 'var') && ~isempty(probetype)
         || strcmp(probetype,'poly3') || strcmp(probetype,'CNT64') || strcmp(probetype,  'NNEdge32') || strcmp(probetype, 'poly2optrode')...
         || strcmp(probetype, 'poly3optrode') || strcmp(probetype,'CNT32_Edge2x16') || strcmp(probetype,'CNT32_Parallel2x16')...
         ||strcmp(probetype,'NN32_Edge1x32') || strcmp(probetype,'NN32_ISO3xtet') || strcmp(probetype,'NN32_Poly2')...
-        || strcmp(probetype,'NN32_Poly3'))
+        || strcmp(probetype,'NN32_Poly3') || strcmp(probetype, 'NN32_Edge1x32') || strcmp(probetype, 'NN32_Poly3'))
         error('you have entered a probe name that is not recognized, pls change or remove');
     end;
 else
@@ -52,8 +52,14 @@ fid=fopen(fullremapfilename);
 D = textscan(fid, '%d %d %d %d %d', 'headerlines', 6, 'Delimiter', ';');  %read 5 collumns (for each recsite a probesitenr, adaptorchannr, HSchannr, x-coord, y-coord; first 6 lines are headers so not read here
 if strcmp(recsystype,'Intan')
     HSchans=D{1,2}';%second collumn holds HSchan nrs  for Intan files
+    
+    HSchans(HSchans==0) = []; %patch added to remove 0s in new remapping file, 15.03.2018
+    
 else
 HSchans=D{1,3}';%third collumn holds HSchan nrs for Amplipex files
+
+
+
 end
 fclose(fid);
 
