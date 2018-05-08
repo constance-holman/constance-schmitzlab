@@ -28,8 +28,24 @@ if exist('mysql', 'file') == 3
         fprintf('Done.\n')
     elseif s == 0
         fprintf('Done.\n');
-        answer = input('A SQL connection is already opened, do you want to continue? [y/N]: ', 's');
-        if isempty(answer) || ~any(strcmpi(answer, {'y', 'yes'}))
+        answer = input('A SQL connection is already opened, [c]ontinue, close [a]ll, [q]uit: ', 's');
+        if any(strcmpi(answer, {'c', 'continue'}))
+            % do nothing
+        elseif any(strcmpi(answer, {'a', 'ca', 'close', 'close all'}))
+            while mysql('status') == 0
+                mysql close;
+            end
+            fprintf('\nAll connections closed.\n')
+            fprintf('Trying to establish new connection... ');
+            try 
+                r = evalc('mysql(''open'', args.host, args.user, args.password)');
+                r = evalc('mysql(''use'', args.database)');
+            catch me
+                fprintf('Failed.\n');
+                error(me.message)
+            end
+            fprintf('Done.\n')
+        else
             fprintf('\nOkay, bye.\n')
             return;
         end
@@ -58,7 +74,7 @@ if ~verified
 end
 
 fprintf('Creating main window... ');
-[gui, data] = create_main();
+[gui, data] = draw_main();
 fprintf('Done.\n\n');
 
 % TODO: create first "page", select / create project
@@ -111,7 +127,7 @@ fprintf('Done.\n\n');
         bool = true;
     end
 
-    function [gui, data] = create_main(db)
+    function [gui, data] = draw_main(db)
         % init handle and data container
         gui = struct();
         data = struct();
@@ -142,10 +158,29 @@ fprintf('Done.\n\n');
         gui.menuitem_recording = uimenu(gui.menu_edit, 'Label', 'Recording');
         gui.menuitem_histology = uimenu(gui.menu_edit, 'Label', 'Histology');
         gui.menu_about = uimenu('Label', 'About');
-                
         
+        % create first page
+        gui.project = create_project(gui.main);
     end
 
+    function project = create_project(main)
+        name = mysql('select name from Project;');
+        project = struct();
+        project.panel = uipanel('Parent', main, ...
+        'BorderType', 'line', ...
+        'HighlightColor', [0 0 0], ...
+        'Units', 'norm', ...
+        'Position', [0.015 0.58, 0.15, 0.4]);
+        project.title_text = uicontrol('Parent', project.panel, ...
+        'Style', 'text', ...
+        'Units', 'norm', ...
+        'FontSize', 10, ...
+        'String', 'Select ', ...
+        'Enable', 'on', ...
+        'HorizontalAlignment', 'left', ...
+        'Visible', 'off', ...
+        'Position', [0.05 0.08 0.5 0.0735]);
+    end
 %     function col_cell = htmlCellColor(color, str)
 %         if ~isempty(color)
 %             col_cell = sprintf('<html><table border=0 bgcolor=%s><TR><TD>%s</TD></TR></table></html>', ...
