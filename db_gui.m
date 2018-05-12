@@ -1,6 +1,7 @@
 function db_gui(host, user, password, database)
 
-% parse input arguments
+%% (1) gui setup
+% (1.1) parse input arguments
 p = inputParser;
 p.addRequired('host', @(x) ischar(x));
 p.addRequired('user', @(x) ischar(x));
@@ -13,7 +14,7 @@ fprintf(['Welcome to SchmitzLab database GUI!\n\n', ...
     'Copyright (C) 2018 Viktor Bahr (viktor [at] eridian.systems)\n\n', ...
     'Looking for working MySQL connector... ']);
 
-% test connector
+% (1.2) test connector
 if exist('mysql', 'file') == 3
     s = mysql('status');
     if s == 1
@@ -56,6 +57,7 @@ else
     error('MySQL connector not found on PATH.');
 end
 
+% (1.3) init schema
 fprintf('\nInitializing database schema ... ');
 if exist('db_init', 'file') == 0
     addpath('sql');
@@ -68,63 +70,21 @@ catch me
 end
 init = which('db_init.m');
 fprintf('Done.\nSchema: ''%s''\n\nVerifying database:\n', init);
+
+% (1.4) verify database
 verified = verify_db(db, args);
 if ~verified
     error('Database not compatible.')
 end
 
+% (1.5) draw gui
 fprintf('Creating main window... ');
 [gui, data] = draw_main();
 fprintf('Done.\n\n');
 
-    function bool = verify_db(db, args)
-        % verify if tables are there
-        t = mysql('show tables;');
-        tables = fieldnames(db);
-        alive = cellfun(@(x) any(strcmp(t, x)), tables);
-        if all(alive)
-            fprintf('- [x] All tables present.\n')
-        elseif any(alive)
-            fprintf('- [~] Detected missing tables:\n');
-            fprintf('\t%s\n',tables{~alive});
-            create = input('- [~] Create missing tables? [Y/n]: ', 's');
-            if isempty(create) || ~any(strcmpi(create, {'n', 'no'}))
-                cellfun(@(x) create_table(db.(x), 'Verbose', false), tables(~alive));
-                alive = cellfun(@(x) any(strcmp(x, tables)), t);
-                fprintf('- [x] All tables present.\n')
-            else
-                fprintf('- [~] Okay, continuing with missing tables.\n')
-            end
-        else
-            fprintf('- [o] No tables detected.\n');
-            create = input('- [o] Create all tables? [Y/n]: ', 's');
-            if isempty(create) || ~any(strcmpi(create, {'n', 'no'}))
-                create_table(db, 'Verbose', false);
-                alive = cellfun(@(x) any(strcmp(x, tables)), t);
-                fprintf('- [x] All tables present.\n')
-            else
-                fprintf('- [o] Okay, bye.\n')
-                bool = false;
-                return
-            end
-        end
-        % verify that database is populated with a-priori knowledge
-        cnt = cellfun(@(x) mysql(sprintf('select count(*) from %s', x)), tables(alive));
-        if ~any(cnt)
-            fprintf('- [o] Database is empty.\n');
-            setup = input('- [o] Run setup script? [Y/n]: ', 's');
-            if isempty(setup) || ~any(strcmpi(setup, {'n', 'no'}))
-                db_setup(args.host, args.user, args.password, args.database, 'Verbose', false);
-            else
-                fprintf('- [o] Warning, some functions will not be useable.\n');
-            end
-        else
-            fprintf('- [x] Database seems populated (%d rows).\n', sum(cnt));
-        end
-        fprintf('\n')
-        bool = true;
-    end
-
+% end of main function
+%% (2) ui drawing functions
+%% (2.1) draw main ui
     function [gui, data] = draw_main()
         % init handle and data container
         gui = struct();
@@ -160,11 +120,13 @@ fprintf('Done.\n\n');
         % create first page
         [gui.project, data.project] = draw_project(gui.main);
     end
-
+    
+%% (2.2) draw project table contols
     function [ui, dat] = draw_project(main)
+        % get table data
         [id, name] = mysql('select project_id, name from Project;');
-        ui = struct();
-        dat = struct();
+        ui = struct(); % struct with ui handles
+        dat = struct(); % struct with table data
         if numel(id) == 0 % empty table
             name_popup_state = 'off';
             name_edit_state = 'on'; % show editbox, add and cancel btn
@@ -174,6 +136,8 @@ fprintf('Done.\n\n');
             name_edit_state = 'off';
             name_string = keystr_zipper(name, id);
         end
+        
+        % draw ui controls
         ui.panel = uipanel('Parent', main, ...
             'BorderType', 'line', ...
             'HighlightColor', [0 0 0], ...
@@ -254,18 +218,9 @@ fprintf('Done.\n\n');
         dat.name = name;
     end
 
-    function keystr = keystr_zipper(cellstr, id)
-        n = length(cellstr);
-        keystr = cell(n, 1);
-        if n == 0
-            keystr = {''};
-            return;
-        end
-        for i = 1:n
-            keystr{i} = sprintf('%s (ID: %d)', cellstr{i}, id(i));
-        end
-    end
 
+%% (3) ui callback functions
+%% (3.1) project table callbacks  
     function project_select_fcn(src, event)
         % update selected key store
     end
@@ -328,6 +283,69 @@ fprintf('Done.\n\n');
         else
             set(gui.project.name_edit, 'String', '');
         end
+    end
+
+%% (4) helper functions
+    % zip cellstring and integer into new cellstring
+    function keystr = keystr_zipper(cellstr, id)
+        n = length(cellstr);
+        keystr = cell(n, 1);
+        if n == 0
+            keystr = {''};
+            return;
+        end
+        for i = 1:n
+            keystr{i} = sprintf('%s (ID: %d)', cellstr{i}, id(i));
+        end
+    end
+
+    % verify database integrity
+    function bool = verify_db(db, args)
+        % verify if tables are there
+        t = mysql('show tables;');
+        tables = fieldnames(db);
+        alive = cellfun(@(x) any(strcmp(t, x)), tables);
+        if all(alive)
+            fprintf('- [x] All tables present.\n')
+        elseif any(alive)
+            fprintf('- [~] Detected missing tables:\n');
+            fprintf('\t%s\n',tables{~alive});
+            create = input('- [~] Create missing tables? [Y/n]: ', 's');
+            if isempty(create) || ~any(strcmpi(create, {'n', 'no'}))
+                cellfun(@(x) create_table(db.(x), 'Verbose', false), tables(~alive));
+                alive = cellfun(@(x) any(strcmp(x, tables)), t);
+                fprintf('- [x] All tables present.\n')
+            else
+                fprintf('- [~] Okay, continuing with missing tables.\n')
+            end
+        else
+            fprintf('- [o] No tables detected.\n');
+            create = input('- [o] Create all tables? [Y/n]: ', 's');
+            if isempty(create) || ~any(strcmpi(create, {'n', 'no'}))
+                create_table(db, 'Verbose', false);
+                alive = cellfun(@(x) any(strcmp(x, tables)), t);
+                fprintf('- [x] All tables present.\n')
+            else
+                fprintf('- [o] Okay, bye.\n')
+                bool = false;
+                return
+            end
+        end
+        % verify that database is populated with a-priori knowledge
+        cnt = cellfun(@(x) mysql(sprintf('select count(*) from %s', x)), tables(alive));
+        if ~any(cnt)
+            fprintf('- [o] Database is empty.\n');
+            setup = input('- [o] Run setup script? [Y/n]: ', 's');
+            if isempty(setup) || ~any(strcmpi(setup, {'n', 'no'}))
+                db_setup(args.host, args.user, args.password, args.database, 'Verbose', false);
+            else
+                fprintf('- [o] Warning, some functions will not be useable.\n');
+            end
+        else
+            fprintf('- [x] Database seems populated (%d rows).\n', sum(cnt));
+        end
+        fprintf('\n')
+        bool = true;
     end
 
 %     function col_cell = htmlCellColor(color, str)
