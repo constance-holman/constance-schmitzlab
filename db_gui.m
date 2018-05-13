@@ -116,12 +116,11 @@ fprintf('Done.\n\n');
         gui.menuitem_recording = uimenu(gui.menu_edit, 'Label', 'Recording');
         gui.menuitem_histology = uimenu(gui.menu_edit, 'Label', 'Histology');
         gui.menu_about = uimenu('Label', 'About');
-        
+                
         % create first page
         [gui.project, data.project] = draw_project(gui.main);
-        if isempty(data.project.id); project_id = 0; end
         [gui.experiment, data.experiment] = ...
-            draw_experiment(gui.main, project_id);
+            draw_experiment(gui.main, data.project.active);
     end
     
 % (2.2) draw project table controls
@@ -133,11 +132,13 @@ fprintf('Done.\n\n');
         if numel(dat.id) == 0 % empty table
             popup_state = 'off';
             edit_state = 'on'; % show editbox, add and cancel btn
-            key_string = {''};
+            key_str = {''};
+            dat.active = 0;
         else % populated table
             popup_state = 'on'; % show key select popup
             edit_state = 'off';
-            key_string = keystr_zipper(dat.name, dat.id);
+            key_str = keystr_zipper(dat.name, dat.id);
+            dat.active = dat.id(1);
         end
         
         % draw ui controls
@@ -181,7 +182,7 @@ fprintf('Done.\n\n');
             'Visible', popup_state, ...
             'Position', [90 46 232.5 4], ...
             'FontSize', 10, ...
-            'String', key_string, ...
+            'String', key_str, ...
             'Value', 1, ...
             'TooltipString', 'Select a project', ...
             'Callback', @project_select_fcn);
@@ -194,7 +195,7 @@ fprintf('Done.\n\n');
         ui.key_add_btn = uicontrol('Parent', ui.panel, ... 
             'Style', 'pushbutton', ...
             'Units', 'pixel', ...
-            'Enable', edit_state, ...
+            'Enable', 'on', ...
             'Visible', 'on', ...
             'String', '+', ...
             'Callback', @project_add_fcn, ...
@@ -218,21 +219,34 @@ fprintf('Done.\n\n');
     end
 
 % (2.3) draw experiment table controls
-    function [ui, dat] = draw_experiment(main, project_id)
+    function [ui, dat] = draw_experiment(main, active)
         % get table data
         ui = struct(); % struct with ui handles
         dat = struct(); % struct with table data
         [dat.id, dat.experimenter, dat.desc] = ...
             mysql(sprintf('select experiment_id, experimenter, description from Experiment where project_id = %d;', ...
-            project_id));
-        if numel(dat.id) == 0 % empty table
-            popup_state = 'on';
+            active));
+        if active == 0 % no project selected
+            popup_state = 'off';
+            edit_state = 'off'; % show editbox, add and cancel btn
+            key_str = {'No project selected'};
+            experimenter_str = '';
+            description_str = '';
+            dat.active = 0;
+        elseif numel(dat.id) == 0 % empty table where project_id
+            popup_state = 'off';
             edit_state = 'on'; % show editbox, add and cancel btn
-            key_string = {'Create new'};
+            key_str = {'Create new'};
+            experimenter_str = '';
+            description_str = '';
+            dat.active = 0;
         else % populated table
             popup_state = 'on'; % show key select popup
             edit_state = 'off';
-            key_string = keystr_zipper(experimenter, id);
+            key_str = keystr_zipper(dat.experimenter, id);
+            experimenter_str = dat.experimenter(1);
+            description_str = dat.desc(1);
+            dat.active = dat.id(1);
         end
         
         % draw ui controls
@@ -276,7 +290,7 @@ fprintf('Done.\n\n');
             'Visible', 'on', ...
             'Position', [90 116 232.5 4], ...
             'FontSize', 10, ...
-            'String', key_string, ...
+            'String', key_str, ...
             'Value', 1, ...
             'TooltipString', 'Select an experiment', ...
             'Callback', @experiment_select_fcn);
@@ -286,13 +300,14 @@ fprintf('Done.\n\n');
             'FontSize', 10, ...
             'String', 'User:', ...
             'Enable', 'on', ...
-            'HorizontalAlignment', 'lef', ...
+            'HorizontalAlignment', 'left', ...
             'Visible', 'on', ...
             'Position', [15 50 66 26]);
         ui.experimenter_edit = uicontrol('Parent', ui.panel, ...
             'Style', 'edit', ...
             'Units', 'pixel', ...
             'Enable', edit_state, ...
+            'String', experimenter_str, ...
             'Visible', 'on', ...
             'Position', [90 55 232.5 25]);
         ui.description_text = uicontrol('Parent', ui.panel, ...
@@ -308,6 +323,7 @@ fprintf('Done.\n\n');
             'Style', 'edit', ...
             'Units', 'pixel', ...
             'Enable', edit_state, ...
+            'String', description_str, ...
             'Visible', 'on', ...
             'Position', [90 20 232.5 25]);
         ui.key_add_btn = uicontrol('Parent', ui.panel, ... 
@@ -338,13 +354,19 @@ fprintf('Done.\n\n');
 %% (3) ui callback functions
 % (3.1) project table callbacks  
     function project_select_fcn(src, event)
-        % update selected key store
+        if isempty(data.project.id)
+            data.project.active = 0;
+        else
+            data.project.active = data.project.id(get(gui.project.key_popup, 'Value'));
+        end
+        % update depending tables
+        experiment_update_fcn();
     end
 
     function project_add_fcn(src, event)
-        if strcmp(get(gui.project.name_popup, 'Visible'), 'on')
-            name_popup_state = 'off';
-            name_edit_state = 'on';
+        if strcmp(get(gui.project.key_popup, 'Visible'), 'on')
+            popup_state = 'off';
+            edit_state = 'on';
         elseif strcmp(get(gui.project.name_edit, 'Visible'), 'on')
             name = get(gui.project.name_edit, 'String');
             data.project.id = [data.project.id, insert_project(name)];
@@ -352,21 +374,22 @@ fprintf('Done.\n\n');
             set(gui.project.subtitle_text, ...
                 'String', sprintf('( Rows: %d )', length(data.project.id)));
             set(gui.project.name_edit, 'String', '');
-            set(gui.project.name_popup, ...
+            set(gui.project.key_popup, ...
                 'String', keystr_zipper(data.project.name, data.project.id));
-            set(gui.project.name_popup, ...
+            set(gui.project.key_popup, ...
                 'Value', length(data.project.id));
-            name_popup_state = 'on';
-            name_edit_state = 'off';
+            project_select_fcn(src, event); % trigger project select callback
+            popup_state = 'on';
+            edit_state = 'off';
         end
-        set(gui.project.name_edit, 'Visible', name_edit_state);
-        set(gui.project.name_popup, 'Visible', name_popup_state);
-        set(gui.project.name_cancel_btn, 'Enable', name_edit_state);
-        set(gui.project.name_rem_btn, 'Enable', name_popup_state);
+        set(gui.project.name_edit, 'Visible', edit_state);
+        set(gui.project.key_popup, 'Visible', popup_state);
+        set(gui.project.key_cancel_btn, 'Enable', edit_state);
+        set(gui.project.key_rem_btn, 'Enable', popup_state);
     end
 
     function project_rem_fcn(src, event)
-        val = get(gui.project.name_popup, 'Value');
+        val = get(gui.project.key_popup, 'Value');
         id = data.project.id(val);
         answ = questdlg('Are you sure?', 'Confirm removal', 'Yes', 'No', 'No');
         if strcmp(answ, 'Yes')
@@ -377,15 +400,16 @@ fprintf('Done.\n\n');
             data.project.name(val) = [];
             set(gui.project.subtitle_text, ...
                 'String', sprintf('( Rows: %d )', length(data.project.id)));
-            set(gui.project.name_popup, ...
+            set(gui.project.key_popup, ...
                 'String', keystr_zipper(data.project.name, data.project.id));
-            set(gui.project.name_popup, ...
+            set(gui.project.key_popup, ...
                 'Value', length(data.project.id));
+            project_select_fcn(src, event);
             if isempty(data.project.id) % force edit mode
                 set(gui.project.name_edit, 'Visible', 'on');
-                set(gui.project.name_popup, 'Visible', 'off');
-                set(gui.project.name_cancel_btn, 'Enable', 'on');
-                set(gui.project.name_rem_btn, 'Enable', 'off');
+                set(gui.project.key_popup, 'Visible', 'off');
+                set(gui.project.key_cancel_btn, 'Enable', 'on');
+                set(gui.project.key_rem_btn, 'Enable', 'off');
             end
         end
     end
@@ -393,12 +417,53 @@ fprintf('Done.\n\n');
     function project_cancel_fcn(src, event)
         if ~isempty(data.project.id)
             set(gui.project.name_edit, 'Visible', 'off');
-            set(gui.project.name_popup, 'Visible', 'on');
-            set(gui.project.name_rem_btn, 'Enable', 'on');
+            set(gui.project.key_popup, 'Visible', 'on');
+            set(gui.project.key_rem_btn, 'Enable', 'on');
             set(src, 'Enable', 'off');
         else
             set(gui.project.name_edit, 'String', '');
         end
+    end
+
+% (3.2) Experiment table callbacks
+
+    function experiment_update_fcn()
+        [data.experiment.id, data.experiment.experimenter, data.experiment.description] = ...
+            mysql(sprintf('select experiment_id, experimenter, description from Experiment where project_id = %d;', ...
+            data.project.active));
+        if data.project.active == 0 % no project selected
+            popup_state = 'off';
+            edit_state = 'off'; % show editbox, add and cancel btn
+            key_str = {'No project selected'};
+            experimenter_str = '';
+            description_str = '';
+            data.experiment.active = 0;
+        elseif numel(data.experiment.id) == 0 % empty table where project_id
+            popup_state = 'off';
+            edit_state = 'off'; % show editbox, add and cancel btn
+            key_str = {'Create new'};
+            experimenter_str = '';
+            description_str = '';
+            data.experiment.active = 0;
+        else % populated table
+            popup_state = 'on'; % show key select popup
+            edit_state = 'off';
+            key_str = keystr_zipper(dat.experimenter, id);
+            experimenter_str = dat.experimenter(1);
+            description_str = dat.desc(1);
+            data.experiment.active = dat.id(1);
+        end
+        
+        set(gui.experiment.key_popup, 'Enable', popup_state);
+        set(gui.experiment.key_popup, 'String', key_str);
+        set(gui.experiment.key_popup, 'Value', 1);
+        set(gui.experiment.experimenter_edit, 'Enable', edit_state);
+        set(gui.experiment.experimenter_edit, 'String', experimenter_str);
+        set(gui.experiment.description_edit, 'Enable', edit_state);
+        set(gui.experiment.description_edit, 'String', description_str);
+        set(gui.experiment.key_add_btn, 'Enable', popup_state);
+        set(gui.experiment.key_rem_btn, 'Enable', popup_state);
+        set(gui.experiment.key_cancel_btn, 'Enable', edit_state);
     end
 
 %% (4) helper functions
