@@ -223,7 +223,7 @@ fprintf('Done.\n\n');
         % get table data
         ui = struct(); % struct with ui handles
         dat = struct(); % struct with table data
-        [dat.id, dat.experimenter, dat.desc] = ...
+        [dat.id, dat.experimenter, dat.description] = ...
             mysql(sprintf('select experiment_id, experimenter, description from Experiment where project_id = %d;', ...
             active));
         if active == 0 % no project selected
@@ -243,9 +243,9 @@ fprintf('Done.\n\n');
         else % populated table
             popup_state = 'on'; % show key select popup
             edit_state = 'off';
-            key_str = keystr_zipper(dat.experimenter, id);
+            key_str = keystr_zipper(dat.experimenter, dat.id);
             experimenter_str = dat.experimenter(1);
-            description_str = dat.desc(1);
+            description_str = dat.description(1);
             dat.active = dat.id(1);
         end
         
@@ -329,7 +329,7 @@ fprintf('Done.\n\n');
         ui.key_add_btn = uicontrol('Parent', ui.panel, ... 
             'Style', 'pushbutton', ...
             'Units', 'pixel', ...
-            'Enable', edit_state, ...
+            'Enable', 'on', ...
             'Visible', 'on', ...
             'String', '+', ...
             'Callback', @experiment_add_fcn, ...
@@ -369,8 +369,8 @@ fprintf('Done.\n\n');
             edit_state = 'on';
         elseif strcmp(get(gui.project.name_edit, 'Visible'), 'on')
             name = get(gui.project.name_edit, 'String');
-            data.project.id = [data.project.id, insert_project(name)];
-            data.project.name = [data.project.name, name];
+            data.project.id = [data.project.id; insert_project(name)];
+            data.project.name = [data.project.name; name];
             set(gui.project.subtitle_text, ...
                 'String', sprintf('( Rows: %d )', length(data.project.id)));
             set(gui.project.name_edit, 'String', '');
@@ -434,13 +434,15 @@ fprintf('Done.\n\n');
         if data.project.active == 0 % no project selected
             popup_state = 'off';
             edit_state = 'off'; % show editbox, add and cancel btn
+            add_state = 'off';
             key_str = {'No project selected'};
             experimenter_str = '';
             description_str = '';
             data.experiment.active = 0;
         elseif numel(data.experiment.id) == 0 % empty table where project_id
             popup_state = 'off';
-            edit_state = 'off'; % show editbox, add and cancel btn
+            edit_state = 'on'; % show editbox, add and cancel btn
+            add_state = 'on';
             key_str = {'Create new'};
             experimenter_str = '';
             description_str = '';
@@ -448,6 +450,7 @@ fprintf('Done.\n\n');
         else % populated table
             popup_state = 'on'; % show key select popup
             edit_state = 'off';
+            add_state = 'on';
             key_str = keystr_zipper(dat.experimenter, id);
             experimenter_str = dat.experimenter(1);
             description_str = dat.desc(1);
@@ -461,11 +464,116 @@ fprintf('Done.\n\n');
         set(gui.experiment.experimenter_edit, 'String', experimenter_str);
         set(gui.experiment.description_edit, 'Enable', edit_state);
         set(gui.experiment.description_edit, 'String', description_str);
-        set(gui.experiment.key_add_btn, 'Enable', popup_state);
+        set(gui.experiment.key_add_btn, 'Enable', add_state);
         set(gui.experiment.key_rem_btn, 'Enable', popup_state);
         set(gui.experiment.key_cancel_btn, 'Enable', edit_state);
     end
 
+    function experiment_select_fcn(src, event)
+        if isempty(data.experiment.id)
+            data.experiment.active = 0;
+            set(gui.experiment.experimenter_edit, 'String', '');
+            set(gui.experiment.description_edit, 'String', '');
+        else
+            val = get(gui.experiment.key_popup, 'Value');
+            data.experiment.active = data.experiment.id(val);
+            set(gui.experiment.experimenter_edit, 'String', data.experiment.experimenter(val));
+            set(gui.experiment.description_edit, 'String', data.experiment.description(val));
+        end
+        % TODO: update depending tables
+    end
+
+    function experiment_add_fcn(src, event)
+        if strcmp(get(gui.experiment.key_popup, 'Enable'), 'on')
+            popup_state = 'off';
+            edit_state = 'on';
+            set(gui.experiment.experimenter_edit, 'String', '');
+            set(gui.experiment.description_edit, 'String', '');
+            set(gui.experiment.key_popup, 'String', {'Create new'});
+            set(gui.experiment.key_popup, 'Value', 1);
+        elseif strcmp(get(gui.experiment.experimenter_edit, 'Enable'), 'on')
+            experimenter = get(gui.experiment.experimenter_edit, 'String');
+            description = get(gui.experiment.description_edit, 'String');
+            data.experiment.id = [data.experiment.id; ...
+                insert_experiment(data.project.active, ...
+                'Experimenter', experimenter, ...
+                'Description', description)];
+            % TODO: Fix error when adding empty vals to an empty cell
+            if isempty(data.experiment.experimenter) && isempty(experimenter)
+                data.experiment.experimenter = {''};
+            else
+                data.experiment.experimenter = [data.experiment.experimenter; experimenter];
+            end
+            if isempty(data.experiment.description) && isempty(description)
+                data.experiment.description = {''};
+            else
+                data.experiment.description = [data.experiment.description; description];
+            end
+            set(gui.experiment.subtitle_text, ...
+                'String', sprintf('( Rows: %d )', length(data.experiment.id)));
+            set(gui.experiment.key_popup, ...
+                'String', keystr_zipper(data.experiment.experimenter, data.experiment.id));
+            set(gui.experiment.key_popup, ...
+                'Value', length(data.experiment.id));
+            experiment_select_fcn(src, event); % trigger experiment select callback
+            popup_state = 'on';
+            edit_state = 'off';
+        end
+        set(gui.experiment.experimenter_edit, 'Enable', edit_state);
+            set(gui.experiment.description_edit, 'Enable', edit_state);
+        set(gui.experiment.key_popup, 'Enable', popup_state);
+        set(gui.experiment.key_cancel_btn, 'Enable', edit_state);
+        set(gui.experiment.key_rem_btn, 'Enable', popup_state);
+    end
+
+    function experiment_rem_fcn(src, event)
+        val = get(gui.experiment.key_popup, 'Value');
+        id = data.experiment.id(val);
+        answ = questdlg('Are you sure?', 'Confirm removal', 'Yes', 'No', 'No');
+        if strcmp(answ, 'Yes')
+            % delete row
+            mysql(sprintf('delete from Experiment where experiment_id = %d;', id));
+            % update ui / data container
+            data.experiment.id(val) = [];
+            data.experiment.experimenter(val) = [];
+            data.experiment.description(val) = [];
+            set(gui.experiment.subtitle_text, ...
+                'String', sprintf('( Rows: %d )', length(data.experiment.id)));
+            if isempty(data.experiment.id) % force edit mode
+                set(gui.experiment.experimenter_edit, 'Enable', 'on');
+                set(gui.experiment.description_edit, 'Enable', 'on');
+                set(gui.experiment.key_popup, 'Enable', 'off');
+                set(gui.experiment.key_cancel_btn, 'Enable', 'on');
+                set(gui.experiment.key_rem_btn, 'Enable', 'off');
+                set(gui.experiment.key_popup, 'String', {'Create new'});
+                set(gui.experiment.key_popup, 'Value', 1);
+            else
+                set(gui.experiment.key_popup, ...
+                'String', keystr_zipper(data.experiment.experimenter, data.experiment.id));
+                set(gui.experiment.key_popup, ...
+                'Value', length(data.experiment.id));
+            end
+            experiment_select_fcn(src, event);
+        end
+    end
+
+    function experiment_cancel_fcn(src, event)
+        if ~isempty(data.experiment.id)
+            set(gui.experiment.experimenter_edit, 'Enable', 'off');
+            set(gui.experiment.description_edit, 'Enable', 'off');
+            set(gui.experiment.key_popup, 'Enable', 'on');
+            set(gui.experiment.key_rem_btn, 'Enable', 'on');
+            set(src, 'Enable', 'off');
+            set(gui.experiment.key_popup, ...
+                'String', keystr_zipper(data.experiment.experimenter, data.experiment.id));
+            set(gui.project.key_popup, ...
+                'Value', length(data.experiment.id));
+            experiment_select_fcn(src, event);
+        else
+            set(gui.experiment.experimenter_edit, 'String', '');
+            set(gui.experiment.description_edit, 'String', '');
+        end
+    end
 %% (4) helper functions
     % zip cellstring and integer into new cellstring
     function keystr = keystr_zipper(cellstr, id)
