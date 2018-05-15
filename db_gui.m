@@ -107,14 +107,6 @@ fprintf('Done.\n\n');
         gui.menu_file = uimenu('Label', 'File');
         gui.menuitem_close = uimenu(gui.menu_file, 'Label', 'Quit', ...
             'Accelerator', 'Q');
-        gui.menu_edit = uimenu('Label', 'Edit');
-        gui.menuitem_project = uimenu(gui.menu_edit, 'Label', 'Project');
-        gui.menuitem_experiment = uimenu(gui.menu_edit, 'Label', 'Experiment');
-        gui.menuitem_animal = uimenu(gui.menu_edit, 'Label', 'Animal');
-        gui.menuitem_session = uimenu(gui.menu_edit, 'Label', 'Session');
-        gui.menuitem_behavior = uimenu(gui.menu_edit, 'Label', 'Behavior');
-        gui.menuitem_recording = uimenu(gui.menu_edit, 'Label', 'Recording');
-        gui.menuitem_histology = uimenu(gui.menu_edit, 'Label', 'Histology');
         gui.menu_about = uimenu('Label', 'About');
                 
         % create first page
@@ -231,6 +223,7 @@ fprintf('Done.\n\n');
         if active == 0 % no project selected
             popup_state = 'off';
             edit_state = 'off'; % show editbox, add and cancel btn
+            add_state = 'off';
             key_str = {'No project selected'};
             experimenter_str = '';
             description_str = '';
@@ -238,6 +231,7 @@ fprintf('Done.\n\n');
         elseif numel(dat.id) == 0 % empty table where project_id
             popup_state = 'off';
             edit_state = 'on'; % show editbox, add and cancel btn
+            add_state = 'on';
             key_str = {'Create new'};
             experimenter_str = '';
             description_str = '';
@@ -245,6 +239,7 @@ fprintf('Done.\n\n');
         else % populated table
             popup_state = 'on'; % show key select popup
             edit_state = 'off';
+            add_state = 'on';
             key_str = keystr_zipper(dat.experimenter, dat.id);
             experimenter_str = dat.experimenter(1);
             description_str = dat.description(1);
@@ -331,7 +326,7 @@ fprintf('Done.\n\n');
         ui.key_add_btn = uicontrol('Parent', ui.panel, ... 
             'Style', 'pushbutton', ...
             'Units', 'pixel', ...
-            'Enable', 'on', ...
+            'Enable', add_state, ...
             'Visible', 'on', ...
             'String', '+', ...
             'Callback', @experiment_add_fcn, ...
@@ -365,26 +360,27 @@ fprintf('Done.\n\n');
         if active == 0 % no project selected
             popup_state = 'off';
             edit_state = 'off'; % show editbox, add and cancel btn
+            add_state = 'off';
             key_str = {'No project selected'};
             name_str = '';
             genotype_str = '';
             sex_val = 1;
             birthdate_str = '';
-            pyrat_id_str = '';
             dat.active = 0;
         elseif numel(dat.id) == 0 % empty table where project_id
             popup_state = 'off';
             edit_state = 'on'; % show editbox, add and cancel btn
+            add_state = 'on';
             key_str = {'Create new'};
             name_str = '';
             genotype_str = '';
             sex_val = 1;
             birthdate_str = '';
-            pyrat_id_str = '';
             dat.active = 0;
         else % populated table
             popup_state = 'on'; % show key select popup
             edit_state = 'off';
+            add_state = 'on';
             key_str = keystr_zipper(dat.name, dat.id);
             name_str = dat.name(1);
             if strcmpi(dat.sex(1), 'm')
@@ -394,7 +390,6 @@ fprintf('Done.\n\n');
             end
             genotype_str = dat.genotype(1);
             birthdate_str = dat.genotype(1);
-            pyrat_id_str = dat.pyrat_id;
             dat.active = dat.id(1);
         end
         
@@ -442,7 +437,7 @@ fprintf('Done.\n\n');
             'String', key_str, ...
             'Value', 1, ...
             'TooltipString', 'Select an experiment', ...
-            'Callback', @experiment_select_fcn);
+            'Callback', @animal_select_fcn);
         ui.name_text = uicontrol('Parent', ui.panel, ...
             'Style', 'text', ...
             'Units', 'pixel', ...
@@ -491,6 +486,7 @@ fprintf('Done.\n\n');
             'Visible', 'on', ...
             'Position', [90 76 232.5 4], ...
             'FontSize', 10, ...
+            'HorizontalAlignment', 'center', ...
             'String', {'', 'm','f'}, ...
             'Value', sex_val, ...
             'TooltipString', 'Select animal sex');
@@ -513,7 +509,7 @@ fprintf('Done.\n\n');
         ui.key_add_btn = uicontrol('Parent', ui.panel, ... 
             'Style', 'pushbutton', ...
             'Units', 'pixel', ...
-            'Enable', 'on', ...
+            'Enable', add_state, ...
             'Visible', 'on', ...
             'String', '+', ...
             'Callback', @animal_add_fcn, ...
@@ -545,6 +541,7 @@ fprintf('Done.\n\n');
         end
         % update depending tables
         experiment_update_fcn();
+        animal_update_fcn();
     end
 
     function project_add_fcn(src, event)
@@ -753,6 +750,193 @@ fprintf('Done.\n\n');
         else
             set(gui.experiment.experimenter_edit, 'String', '');
             set(gui.experiment.description_edit, 'String', '');
+        end
+    end
+
+% (3.3) Animal table callbacks
+
+    function animal_update_fcn()
+        [data.animal.id, data.animal.genotype, data.animal.birthdate, data.animal.sex, data.animal.name, data.animal.pyrat_id] = ...
+            mysql(sprintf('select animal_id, genotype, birthdate, sex, name, pyrat_id from Animal where project_id = %d;', ...
+            data.project.active));
+        if data.project.active == 0 % no project selected
+            popup_state = 'off';
+            edit_state = 'off'; % show editbox, add and cancel btn
+            add_state = 'off';
+            key_str = {'No project selected'};
+            name_str = '';
+            genotype_str = '';
+            sex_val = 1;
+            birthdate_str = '';
+            data.animal.active = 0;
+        elseif numel(data.experiment.id) == 0 % empty table where project_id
+            popup_state = 'off';
+            edit_state = 'on'; % show editbox, add and cancel btn
+            add_state = 'on';
+            key_str = {'Create new'};
+            name_str = '';
+            genotype_str = '';
+            sex_val = 1;
+            birthdate_str = '';
+            data.animal.active = 0;
+        else % populated table
+            popup_state = 'on'; % show key select popup
+            edit_state = 'off';
+            add_state = 'on';
+            key_str = keystr_zipper(data.animal.name, data.animal.id);
+            name_str = data.animal.name(1);
+            genotype_str = data.animal.genotype(1);
+            if strcmpi(data.animal.sex(1), 'm')
+                sex_val = 2;
+            else
+                sex_val = 3;
+            end
+            birthdate_str = data.animal.birthdate(1);
+            data.experiment.active = data.animal.id(1);
+        end
+        
+        set(gui.animal.key_popup, 'Enable', popup_state);
+        set(gui.animal.key_popup, 'String', key_str);
+        set(gui.animal.key_popup, 'Value', 1);
+        set(gui.animal.name_edit, 'Enable', edit_state);
+        set(gui.animal.name_edit, 'String', name_str);
+        set(gui.animal.genotype_edit, 'Enable', edit_state);
+        set(gui.animal.genotype_edit, 'String', genotype_str);
+        set(gui.animal.sex_popup, 'Value', sex_val);
+        set(gui.animal.sex_popup, 'Enable', edit_state);
+        set(gui.animal.birthdate_edit, 'Enable', edit_state);
+        set(gui.animal.birthdate_edit, 'String', birthdate_str);
+        set(gui.animal.key_add_btn, 'Enable', add_state);
+        set(gui.animal.key_rem_btn, 'Enable', popup_state);
+        set(gui.animal.key_cancel_btn, 'Enable', edit_state);
+    end
+
+    function animal_select_fcn(src, event)
+        if isempty(data.animal.id)
+            data.animal.active = 0;
+            set(gui.animal.name_edit, 'String', '');
+            set(gui.animal.genotype_edit, 'String', '');
+            set(gui.animal.sex_popup, 'Value', 1);
+            set(gui.animal.birthdate_edit, 'String', '');
+        else
+            val = get(gui.animal.key_popup, 'Value');
+            data.animal.active = data.animal.id(val);
+            set(gui.animal.name_edit, 'String', data.animal.name(val));
+            set(gui.animal.genotype_edit, 'String', data.animal.genotype(val));
+            if strcmpi(data.animal.sex(val), 'm')
+                sex_val = 2;
+            else
+                sex_val = 3;
+            end
+            set(gui.animal.sex_popup, 'Value', sex_val);
+            set(gui.animal.birthdate_edit, 'String', data.animal.birthdate(val));
+        end
+        % TODO: update depending tables
+    end
+
+    function animal_add_fcn(src, event)
+        sex_enum = {'', 'm', 'f'};
+        if strcmp(get(gui.animal.key_popup, 'Enable'), 'on')
+            popup_state = 'off';
+            edit_state = 'on';
+            set(gui.animal.name_edit, 'String', '');
+            set(gui.animal.genotype_edit, 'String', '');
+            set(gui.animal.sex_popup, 'Value', 1);
+            set(gui.animal.birthdate_edit, 'String', '');
+            set(gui.animal.key_popup, 'String', {'Create new'});
+            set(gui.animal.key_popup, 'Value', 1);
+        elseif strcmp(get(gui.animal.name_edit, 'Enable'), 'on')
+            name = get(gui.animal.name_edit, 'String');
+            genotype = get(gui.animal.genotype_edit, 'String');
+            sex = sex_enum{get(gui.animal.sex_popup, 'Value')};
+            birthdate = get(gui.animal.birthdate_edit, 'String');
+            data.animal.id = [data.animal.id; ...
+                insert_animal(data.project.active, ...
+                'Name', name, ...
+                'Genotype', genotype, ...
+                'Sex', sex, ...
+                'Birthdate', birthdate)];
+            if isempty(name); name = {''}; end
+            data.animal.name = [data.animal.name; name];
+            if isempty(genotype); genotype = {''}; end
+            data.animal.genotype = [data.animal.genotype; genotype];
+            if isempty(sex); sex = {''}; end
+            data.animal.sex = [data.animal.sex; sex];
+            if isempty(birthdate); birthdate = ''; end
+            data.animal.birthdate = [data.animal.birthdate; birthdate];
+            set(gui.animal.subtitle_text, ...
+                'String', sprintf('( Rows: %d )', length(data.animal.id)));
+            set(gui.animal.key_popup, ...
+                'String', keystr_zipper(data.animal.name, data.animal.id));
+            set(gui.animal.key_popup, ...
+                'Value', length(data.animal.id));
+            animal_select_fcn(src, event); % trigger animal select callback
+            popup_state = 'on';
+            edit_state = 'off';
+        end
+        set(gui.animal.name_edit, 'Enable', edit_state);
+        set(gui.animal.genotype_edit, 'Enable', edit_state);
+        set(gui.animal.sex_popup, 'Enable', edit_state);
+        set(gui.animal.birthdate_edit, 'Enable', edit_state);
+        set(gui.animal.key_popup, 'Enable', popup_state);
+        set(gui.animal.key_cancel_btn, 'Enable', edit_state);
+        set(gui.animal.key_rem_btn, 'Enable', popup_state);
+    end
+
+    function animal_rem_fcn(src, event)
+        val = get(gui.animal.key_popup, 'Value');
+        id = data.animal.id(val);
+        answ = questdlg('Are you sure?', 'Confirm removal', 'Yes', 'No', 'No');
+        if strcmp(answ, 'Yes')
+            % delete row
+            mysql(sprintf('delete from Animal where animal_id = %d;', id));
+            % update ui / data container
+            data.animal.id(val) = [];
+            data.animal.name(val) = [];
+            data.animal.genotype(val) = [];
+            data.animal.sex(val) = [];
+            data.animal.birthdate(val) = [];
+            set(gui.animal.subtitle_text, ...
+                'String', sprintf('( Rows: %d )', length(data.animal.id)));
+            if isempty(data.animal.id) % force edit mode
+                set(gui.animal.name_edit, 'Enable', 'on');
+                set(gui.animal.genotype_edit, 'Enable', 'on');
+                 set(gui.animal.sex_popup, 'Enable', 'on');
+                set(gui.animal.birthdate_edit, 'Enable', 'on');
+                set(gui.animal.key_popup, 'Enable', 'off');
+                set(gui.animal.key_cancel_btn, 'Enable', 'on');
+                set(gui.animal.key_rem_btn, 'Enable', 'off');
+                set(gui.animal.key_popup, 'String', {'Create new'});
+                set(gui.animal.key_popup, 'Value', 1);
+            else
+                set(gui.animal.key_popup, ...
+                'String', keystr_zipper(data.animal.name, data.animal.id));
+                set(gui.animal.key_popup, ...
+                'Value', length(data.animal.id));
+            end
+            animal_select_fcn(src, event);
+        end
+    end
+
+    function animal_cancel_fcn(src, event)
+        if ~isempty(data.animal.id)
+            set(gui.animal.name_edit, 'Enable', 'off');
+            set(gui.animal.genotype_edit, 'Enable', 'off');
+            set(gui.animal.sex_popup, 'Enable', 'off');
+            set(gui.animal.birthdate_edit, 'Enable', 'off');
+            set(gui.animal.key_popup, 'Enable', 'on');
+            set(gui.animal.key_rem_btn, 'Enable', 'on');
+            set(src, 'Enable', 'off');
+            set(gui.animal.key_popup, ...
+                'String', keystr_zipper(data.animal.name, data.animal.id));
+            set(gui.project.key_popup, ...
+                'Value', length(data.animal.id));
+            animal_select_fcn(src, event);
+        else
+            set(gui.animal.name_edit, 'String', '');
+            set(gui.animal.genotype_edit, 'String', '');
+            set(gui.animal.sex_popup, 'Value', 1);
+            set(gui.animal.birthdate_edit, 'String', '');
         end
     end
 %% (4) helper functions
