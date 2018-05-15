@@ -539,7 +539,7 @@ fprintf('Done.\n\n');
         % get table data
         ui = struct(); % struct with ui handles
         dat = struct(); % struct with table data
-        [dat.virus_name, dat.x_coord, dat.y_coord, dat.date, dat.volume, dat.target] = ...
+        [dat.name, dat.x_coord, dat.y_coord, dat.date, dat.volume, dat.target] = ...
             mysql(sprintf('select virus_name, x_coord, y_coord, date, volume, target from StereotacticInjection where animal_id = %d;', ...
             active));
         if active == 0 % no animal selected
@@ -553,8 +553,7 @@ fprintf('Done.\n\n');
             date_str = '';
             volume_str = '';
             target_str = '';
-            dat.active = 0;
-        elseif numel(dat.id) == 0 % empty table where animal_id
+        elseif numel(dat.name) == 0 % empty table where animal_id
             popup_state = 'off';
             edit_state = 'on'; % show editbox, add and cancel btn
             add_state = 'on';
@@ -565,19 +564,17 @@ fprintf('Done.\n\n');
             date_str = '';
             volume_str = '';
             target_str = '';
-            dat.active = 0;
         else % populated table
             popup_state = 'on'; % show key select popup
             edit_state = 'off';
             add_state = 'on';
-            key_str = keystr_zipper(dat.virus_name, dat.id);
-            name_str = dat.virus_name(1);
+            key_str = keystr_zipper(dat.name, 1:length(dat.name));
+            name_str = dat.name(1);
             x_str = dat.x_coord;
             y_str = dat.y_coord;
             date_str = dat.date(1);
-            volume_str = dat.volumne(1);
+            volume_str = dat.volume(1);
             target_str = dat.target(1);
-            dat.active = dat.id(1);
         end
         
         % draw ui controls
@@ -600,7 +597,7 @@ fprintf('Done.\n\n');
             'Style', 'text', ...
             'Units', 'pixel', ...
             'FontSize', 8, ...
-            'String', sprintf('( Rows: %d )', numel(dat.virus_name)), ...
+            'String', sprintf('( Rows: %d )', numel(dat.name)), ...
             'Enable', 'on', ...
             'HorizontalAlignment', 'center', ...
             'Visible', 'on', ...
@@ -629,7 +626,7 @@ fprintf('Done.\n\n');
             'Style', 'text', ...
             'Units', 'pixel', ...
             'FontSize', 10, ...
-            'String', 'Name:', ...
+            'String', 'Virus:', ...
             'Enable', 'on', ...
             'HorizontalAlignment', 'left', ...
             'Visible', 'on', ...
@@ -1050,6 +1047,7 @@ fprintf('Done.\n\n');
             set(gui.animal.birthdate_edit, 'String', data.animal.birthdate(val));
         end
         % TODO: update depending tables
+        virusinjection_update_fcn();
     end
 
     function animal_add_fcn(src, event)
@@ -1155,6 +1153,209 @@ fprintf('Done.\n\n');
             set(gui.animal.genotype_edit, 'String', '');
             set(gui.animal.sex_popup, 'Value', 1);
             set(gui.animal.birthdate_edit, 'String', '');
+        end
+    end
+
+% (3.4) StereotacticInjection table callbacks
+
+    function virusinjection_update_fcn()
+        [data.virusinjection.name, data.virusinjection.x_coord, data.virusinjection.y_coord, data.virusinjection.date, data.virusinjection.volume, data.virusinjection.target] = ...
+            mysql(sprintf('select virus_name, x_coord, y_coord, date, volume, target from StereotacticInjection where animal_id = %d;', ...
+            data.animal.active));
+        if data.animal.active == 0 % no animal selected
+            popup_state = 'off';
+            edit_state = 'off'; % show editbox, add and cancel btn
+            add_state = 'off';
+            key_str = {'No animal selected'};
+            name_str = '';
+            x_str = '';
+            y_str = '';
+            date_str = '';
+            volume_str = '';
+            target_str = '';
+        elseif numel(data.virusinjection.name) == 0 % empty table where project_id
+            popup_state = 'off';
+            edit_state = 'on'; % show editbox, add and cancel btn
+            add_state = 'on';
+            key_str = {'Create new'};
+            name_str = '';
+            x_str = '';
+            y_str = '';
+            date_str = '';
+            volume_str = '';
+            target_str = '';
+        else % populated table
+            popup_state = 'on'; % show key select popup
+            edit_state = 'off';
+            add_state = 'on';
+            key_str = keystr_zipper(data.virusinjection.name, 1:length(data.virusinjection.name));
+            name_str = data.virusinjection.name(1);
+            x_str = num2str(data.virusinjection.x_coord(1));
+            y_str = num2str(data.virusinjection.y_coord(1));
+            date_str = data.virusinjection.date(1);
+            volume_str = num2str(data.virusinjection.volume(1));
+            target_str = data.virusinjection.target(1);
+        end
+        
+        set(gui.virusinjection.key_popup, 'Enable', popup_state);
+        set(gui.virusinjection.key_popup, 'String', key_str);
+        set(gui.virusinjection.key_popup, 'Value', 1);
+        set(gui.virusinjection.name_edit, 'Enable', edit_state);
+        set(gui.virusinjection.name_edit, 'String', name_str);
+        set(gui.virusinjection.x_edit, 'Enable', edit_state);
+        set(gui.virusinjection.x_edit, 'String', x_str);
+        set(gui.virusinjection.y_edit, 'Enable', edit_state);
+        set(gui.virusinjection.y_edit, 'String', y_str);
+        set(gui.virusinjection.date_edit, 'Enable', edit_state);
+        set(gui.virusinjection.date_edit, 'String', date_str);
+        set(gui.virusinjection.volume_edit, 'Enable', edit_state);
+        set(gui.virusinjection.volume_edit, 'String', volume_str);
+        set(gui.virusinjection.target_edit, 'Enable', edit_state);
+        set(gui.virusinjection.target_edit, 'String', target_str);
+        set(gui.virusinjection.key_add_btn, 'Enable', add_state);
+        set(gui.virusinjection.key_rem_btn, 'Enable', popup_state);
+        set(gui.virusinjection.key_cancel_btn, 'Enable', edit_state);
+    end
+
+    function virusinjection_select_fcn(src, event)
+        if isempty(data.virusinjection.name)
+            set(gui.virusinjection.name_edit, 'String', '');
+            set(gui.virusinjection.x_edit, 'String', '');
+            set(gui.virusinjection.y_edit, 'String', '');
+            set(gui.virusinjection.date_edit, 'String', '');
+            set(gui.virusinjection.volume_edit, 'String', '');
+            set(gui.virusinjection.target_edit, 'String', '');
+        else
+            val = get(gui.virusinjection.key_popup, 'Value');
+            set(gui.virusinjection.name_edit, 'String', data.virusinjection.name(val));
+            set(gui.virusinjection.x_edit, 'String', num2str(data.virusinjection.x_coord(val)));
+            set(gui.virusinjection.y_edit, 'String', num2str(data.virusinjection.y_coord(val)));
+            set(gui.virusinjection.date_edit, 'String', data.virusinjection.date(val));
+            set(gui.virusinjection.volume_edit, 'String', num2str(data.virusinjection.volume(val)));
+            set(gui.virusinjection.target_edit, 'String', data.virusinjection.target(val));
+        end
+        % TODO: update depending tables
+    end
+
+    function virusinjection_add_fcn(src, event)
+        if strcmp(get(gui.virusinjection.key_popup, 'Enable'), 'on')
+            popup_state = 'off';
+            edit_state = 'on';
+            set(gui.virusinjection.name_edit, 'String', '');
+            set(gui.virusinjection.x_edit, 'String', '');
+            set(gui.virusinjection.y_edit, 'String', '');
+            set(gui.virusinjection.date_edit, 'String', '');
+            set(gui.virusinjection.volume_edit, 'String', '');
+            set(gui.virusinjection.target_edit, 'String', '');
+            set(gui.virusinjection.key_popup, 'String', {'Create new'});
+            set(gui.virusinjection.key_popup, 'Value', 1);
+        elseif strcmp(get(gui.virusinjection.name_edit, 'Enable'), 'on')
+            name = get(gui.virusinjection.name_edit, 'String');
+            x = str2double(get(gui.virusinjection.x_edit, 'String'));
+            y = str2double(get(gui.virusinjection.y_edit, 'String'));
+            date = get(gui.virusinjection.date_edit, 'String');
+            volume = str2double(get(gui.virusinjection.volume_edit, 'String'));
+            target = get(gui.virusinjection.target_edit, 'String');
+            insert_stereotactic(data.animal.active, ...
+                'Virus', name, ...
+                'Position', [x, y], ...
+                'Date', date, ...
+                'Volume', volume, ...
+                'Target', target);
+            if isempty(name); name = {''}; end
+            data.virusinjection.name = [data.virusinjection.name; name];
+            if isempty(x); x = 0; end
+            data.virusinjection.x_coord = [data.virusinjection.x_coord; x];
+            if isempty(y); y = 0; end
+            data.virusinjection.y_coord = [data.virusinjection.y_coord; y];
+            if isempty(date); date = {''}; end
+            data.virusinjection.date = [data.virusinjection.date; date];
+            if isempty(volume); volume = 0; end
+            data.virusinjection.volume = [data.virusinjection.volume; volume];
+            if isempty(target); target = {''}; end
+            data.virusinjection.target = [data.virusinjection.target; target];
+            set(gui.virusinjection.subtitle_text, ...
+                'String', sprintf('( Rows: %d )', length(data.virusinjection.name)));
+            set(gui.virusinjection.key_popup, ...
+                'String', keystr_zipper(data.virusinjection.name, 1:length(data.virusinjection.name)));
+            set(gui.virusinjection.key_popup, ...
+                'Value', length(data.virusinjection.name));
+            virusinjection_select_fcn(src, event); % trigger virusinjection select callback
+            popup_state = 'on';
+            edit_state = 'off';
+        end
+        set(gui.virusinjection.name_edit, 'Enable', edit_state);
+        set(gui.virusinjection.x_edit, 'Enable', edit_state);
+        set(gui.virusinjection.y_edit, 'Enable', edit_state);
+        set(gui.virusinjection.date_edit, 'Enable', edit_state);
+        set(gui.virusinjection.volume_edit, 'Enable', edit_state);
+        set(gui.virusinjection.target_edit, 'Enable', edit_state);
+        set(gui.virusinjection.key_popup, 'Enable', popup_state);
+        set(gui.virusinjection.key_cancel_btn, 'Enable', edit_state);
+        set(gui.virusinjection.key_rem_btn, 'Enable', popup_state);
+    end
+
+    function virusinjection_rem_fcn(src, event)
+        val = get(gui.virusinjection.key_popup, 'Value');
+        name = data.virusinjection.name{val};
+        answ = questdlg('Are you sure?', 'Confirm removal', 'Yes', 'No', 'No');
+        if strcmp(answ, 'Yes')
+            % delete row
+            mysql(sprintf('delete from StereotacticInjection where virus_name = ''%s'';', name));
+            % update ui / data container
+            data.virusinjection.name(val) = [];
+            data.virusinjection.x_coord(val) = [];
+            data.virusinjection.y_coord(val) = [];
+            data.virusinjection.date(val) = [];
+            data.virusinjection.volume(val) = [];
+            data.virusinjection.target(val) = [];
+            set(gui.virusinjection.subtitle_text, ...
+                'String', sprintf('( Rows: %d )', length(data.virusinjection.name)));
+            if isempty(data.virusinjection.name) % force edit mode
+                set(gui.virusinjection.name_edit, 'Enable', 'on');
+                set(gui.virusinjection.x_edit, 'Enable', 'on');
+                 set(gui.virusinjection.y_edit, 'Enable', 'on');
+                set(gui.virusinjection.date_edit, 'Enable', 'on');
+                set(gui.virusinjection.volume_edit, 'Enable', 'on');
+                set(gui.virusinjection.target_edit, 'Enable', 'on');
+                set(gui.virusinjection.key_popup, 'Enable', 'off');
+                set(gui.virusinjection.key_cancel_btn, 'Enable', 'on');
+                set(gui.virusinjection.key_rem_btn, 'Enable', 'off');
+                set(gui.virusinjection.key_popup, 'String', {'Create new'});
+                set(gui.virusinjection.key_popup, 'Value', 1);
+            else
+                set(gui.virusinjection.key_popup, ...
+                'String', keystr_zipper(data.virusinjection.name, 1:length(data.virusinjection.name)));
+                set(gui.virusinjection.key_popup, ...
+                'Value', length(data.virusinjection.name));
+            end
+            virusinjection_select_fcn(src, event);
+        end
+    end
+
+    function virusinjection_cancel_fcn(src, event)
+        if ~isempty(data.virusinjection.id)
+            set(gui.virusinjection.name_edit, 'Enable', 'off');
+            set(gui.virusinjection.x_edit, 'Enable', 'off');
+            set(gui.virusinjection.y_edit, 'Enable', 'off');
+            set(gui.virusinjection.date_edit, 'Enable', 'off');
+            set(gui.virusinjection.volume_edit, 'Enable', 'off');
+            set(gui.virusinjection.target_edit, 'Enable', 'off');
+            set(gui.virusinjection.key_popup, 'Enable', 'on');
+            set(gui.virusinjection.key_rem_btn, 'Enable', 'on');
+            set(src, 'Enable', 'off');
+            set(gui.virusinjection.key_popup, ...
+                'String', keystr_zipper(data.virusinjection.name, 1:length(data.virusinjection.name)));
+            set(gui.project.key_popup, ...
+                'Value', length(data.virusinjection.name));
+            virusinjection_select_fcn(src, event);
+        else
+            set(gui.virusinjection.name_edit, 'String', '');
+            set(gui.virusinjection.x_edit, 'String', '');
+            set(gui.virusinjection.y_edit, 'String', '');
+            set(gui.virusinjection.date_edit, 'String', '');
+            set(gui.virusinjection.volume_edit, 'String', '');
+            set(gui.virusinjection.target_edit, 'String', '');
         end
     end
 %% (4) helper functions
