@@ -1046,6 +1046,7 @@ fprintf('Done.\n\n');
             set(gui.experiment.description_edit, 'String', data.experiment.description(val));
         end
         % TODO: update depending tables
+        session_update_fcn();
     end
 
     function experiment_add_fcn(src, event)
@@ -1217,6 +1218,7 @@ fprintf('Done.\n\n');
         end
         % TODO: update depending tables
         virusinjection_update_fcn();
+        session_update_fcn();
     end
 
     function animal_add_fcn(src, event)
@@ -1525,6 +1527,184 @@ fprintf('Done.\n\n');
             set(gui.virusinjection.date_edit, 'String', '');
             set(gui.virusinjection.volume_edit, 'String', '');
             set(gui.virusinjection.target_edit, 'String', '');
+        end
+    end
+
+% (3.5) Session table callbacks
+
+    function session_update_fcn()
+        [data.session.id, data.session.start_date, data.session.note, data.session.type] = ...
+            mysql(sprintf('select session_id, start_date, note, session_type from Session where animal_id = %d and experiment_id = %d;', ...
+            data.animal.active, data.experiment.active));
+        if data.animal.active == 0 || data.experiment.active == 0
+            popup_state = 'off';
+            edit_state = 'off'; % show editbox, add and cancel btn
+            add_state = 'off';
+            key_str = {'No animal / experiment'};
+            start_date_str = '';
+            note_str = '';
+            type_val = 1;
+        elseif numel(data.session.id) == 0 % empty table where project_id
+            popup_state = 'off';
+            edit_state = 'on'; % show editbox, add and cancel btn
+            add_state = 'on';
+            key_str = {'Create new'};
+            start_date_str = '';
+            note_str = '';
+            type_val = 1;
+        else % populated table
+            popup_state = 'on'; % show key select popup
+            edit_state = 'off';
+            add_state = 'on';
+            key_str = keystr_zipper(data.session.start_date, data.session.id);
+            start_date_str = data.session.start_date(1);
+            note_str = num2str(data.session.note(1));
+            if strcmpi(data.session.type(1), 'behav')
+                type_val = 2;
+            elseif strcmpi(data.session.type(1), 'rec')
+                type_val = 3;
+            elseif strcmpi(gui.session.type(val), 'both')
+                type_val = 4;
+            else
+                type_val = 1;
+            end
+        end
+        
+        set(gui.session.key_popup, 'Enable', popup_state);
+        set(gui.session.key_popup, 'String', key_str);
+        set(gui.session.key_popup, 'Value', 1);
+        set(gui.session.start_date_edit, 'Enable', edit_state);
+        set(gui.session.start_date_edit, 'String', start_date_str);
+        set(gui.session.note_edit, 'Enable', edit_state);
+        set(gui.session.note_edit, 'String', note_str);
+        set(gui.session.type_popup, 'Enable', edit_state);
+        set(gui.session.type_popup, 'Value', type_val);
+        set(gui.session.key_add_btn, 'Enable', add_state);
+        set(gui.session.key_rem_btn, 'Enable', popup_state);
+        set(gui.session.key_cancel_btn, 'Enable', edit_state);
+    end
+
+    function session_select_fcn(src, event)
+        if isempty(data.session.id)
+            set(gui.session.start_date_edit, 'String', '');
+            set(gui.session.note_edit, 'String', '');
+            set(gui.session.type_popup, 'Value', 1);
+        else
+            val = get(gui.session.key_popup, 'Value');
+            set(gui.session.start_date_edit, 'String', data.session.start_date(val));
+            set(gui.session.note_edit, 'String', data.session.note(val));
+            if strcmpi(data.session.type(val), 'behav')
+                type_val = 2;
+            elseif strcmpi(data.session.type(val), 'rec')
+                type_val = 3;
+            elseif strcmpi(data.session.type(val), 'both')
+                type_val = 4;
+            else
+                type_val = 1;
+            end
+            set(gui.session.type_popup, 'Value', type_val);
+        end
+        % TODO: update depending tables
+    end
+
+    function session_add_fcn(src, event)
+        if strcmp(get(gui.session.key_popup, 'Enable'), 'on')
+            popup_state = 'off';
+            edit_state = 'on';
+            set(gui.session.start_date_edit, 'String', '');
+            set(gui.session.note_edit, 'String', '');
+            set(gui.session.type_popup, 'Value', 1);
+            set(gui.session.key_popup, 'String', {'Create new'});
+            set(gui.session.key_popup, 'Value', 1);
+        elseif strcmp(get(gui.session.start_date_edit, 'Enable'), 'on')
+            start_date = get(gui.session.start_date_edit, 'String');
+            note = get(gui.session.note_edit, 'String');
+            type_val = get(gui.session.type_popup, 'Value');
+            if type_val == 0
+                type = '';
+            elseif type_val == 1
+                type = 'behav';
+            elseif type_val == 2
+                type = 'rec';
+            else
+                type = 'both';
+            end
+            data.session.id = [data.session.id; ...
+                insert_session(data.animal.active, data.experiment.active, ...
+                start_date, 'Note', note, 'Type', type)];
+            data.session.start_date = [data.session.start_date; start_date];
+            if isempty(note); note = {''}; end
+            data.session.note = [data.session.note; note];
+            if isempty(type); type = {''}; end
+            data.session.type = [data.session.type; type];
+            set(gui.session.subtitle_text, ...
+                'String', sprintf('( Rows: %d )', length(data.session.id)));
+            set(gui.session.key_popup, ...
+                'String', keystr_zipper(data.session.start_date, data.session.id));
+            set(gui.session.key_popup, ...
+                'Value', length(data.session.id));
+            session_select_fcn(src, event); % trigger session select callback
+            popup_state = 'on';
+            edit_state = 'off';
+        end
+        set(gui.session.start_date_edit, 'Enable', edit_state);
+        set(gui.session.note_edit, 'Enable', edit_state);
+        set(gui.session.type_popup, 'Enable', edit_state);
+        set(gui.session.key_popup, 'Enable', popup_state);
+        set(gui.session.key_cancel_btn, 'Enable', edit_state);
+        set(gui.session.key_rem_btn, 'Enable', popup_state);
+    end
+
+    function session_rem_fcn(src, event)
+        val = get(gui.session.key_popup, 'Value');
+        id = data.session.id(val);
+        answ = questdlg('Are you sure?', 'Confirm removal', 'Yes', 'No', 'No');
+        if strcmp(answ, 'Yes')
+            % delete row
+            mysql(sprintf('delete from Session where session_id = %d;', id));
+            % update ui / data container
+            data.session.id(val) = [];
+            data.session.start_date(val) = [];
+            data.session.note(val) = [];
+            data.session.type(val) = [];
+            set(gui.session.subtitle_text, ...
+                'String', sprintf('( Rows: %d )', length(data.session.id)));
+            if isempty(data.session.id) % force edit mode
+                set(gui.session.start_date_edit, 'Enable', 'on');
+                set(gui.session.note_edit, 'Enable', 'on');
+                set(gui.session.type_popup, 'Enable', 'on');
+                set(gui.session.key_popup, 'Enable', 'off');
+                set(gui.session.key_cancel_btn, 'Enable', 'on');
+                set(gui.session.key_rem_btn, 'Enable', 'off');
+                set(gui.session.key_popup, 'String', {'Create new'});
+                set(gui.session.key_popup, 'Value', 1);
+            else
+                set(gui.session.key_popup, ...
+                'String', keystr_zipper(data.session.start_date, data.session.id));
+                set(gui.session.key_popup, ...
+                'Value', length(data.session.id));
+            end
+            session_select_fcn(src, event);
+        end
+    end
+
+    function session_cancel_fcn(src, event)
+        if ~isempty(data.session.id)
+            set(gui.session.start_date_edit, 'Enable', 'off');
+            set(gui.session.note_edit, 'Enable', 'off');
+            set(gui.session.type_popup, 'Enable', 'off');
+            set(gui.session.key_popup, 'Enable', 'on');
+            set(gui.session.key_rem_btn, 'Enable', 'on');
+            set(src, 'Enable', 'off');
+            set(gui.session.key_popup, ...
+                'String', keystr_zipper(data.session.start_date, data.session.id));
+            set(gui.project.key_popup, ...
+                'Value', length(data.session.id));
+            session_select_fcn(src, event);
+        else
+            set(gui.session.start_date_edit, 'String', '');
+            set(gui.session.note_edit, 'String', '');
+            set(gui.session.type_popup, 'Value', 1);
         end
     end
 %% (4) helper functions
