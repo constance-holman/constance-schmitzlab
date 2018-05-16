@@ -119,6 +119,8 @@ fprintf('Done.\n\n');
             draw_virusinjection(gui.main, data.animal.active);
         [gui.session, data.session] = ...
             draw_session(gui.main, data.animal.active, data.experiment.active);
+        [gui.next1] = ...
+            draw_next1(gui.main, data.session.active);
     end
     
 % (2.2) draw project table controls
@@ -915,6 +917,25 @@ fprintf('Done.\n\n');
             'Callback', @session_cancel_fcn, ...
             'Position', [412.5 135 25 25]);
     end
+
+% (2.5) draw next button panel
+    function [ui] = draw_next1(main, active)
+        % draw ui controls
+        ui.panel = uipanel('Parent', main, ...
+            'BorderType', 'line', ...
+            'HighlightColor', [0 0 0], ...
+            'Units', 'pixel', ...
+            'Position', [512.5 125 462.5 50]);
+        ui.continue_btn = uicontrol('Parent', ui.panel, ... 
+            'Style', 'pushbutton', ...
+            'Units', 'pixel', ...
+            'Enable', edit_state, ...
+            'Visible', 'on', ...
+            'String', 'x', ...
+            'Callback', @continue_fcn, ...
+            'Position', [412.5 200 25 25]);
+    end
+        
 %% (3) ui callback functions
 % (3.1) project table callbacks  
     function project_select_fcn(src, event)
@@ -1544,6 +1565,7 @@ fprintf('Done.\n\n');
             start_date_str = '';
             note_str = '';
             type_val = 1;
+            data.session.active = 0;
         elseif numel(data.session.id) == 0 % empty table where project_id
             popup_state = 'off';
             edit_state = 'on'; % show editbox, add and cancel btn
@@ -1552,6 +1574,7 @@ fprintf('Done.\n\n');
             start_date_str = '';
             note_str = '';
             type_val = 1;
+            data.session.active = 0;
         else % populated table
             popup_state = 'on'; % show key select popup
             edit_state = 'off';
@@ -1563,11 +1586,12 @@ fprintf('Done.\n\n');
                 type_val = 2;
             elseif strcmpi(data.session.type(1), 'rec')
                 type_val = 3;
-            elseif strcmpi(gui.session.type(val), 'both')
+            elseif strcmpi(gui.session.type(1), 'both')
                 type_val = 4;
             else
                 type_val = 1;
             end
+            data.session.active = data.session.id(1);
         end
         
         set(gui.session.key_popup, 'Enable', popup_state);
@@ -1589,6 +1613,7 @@ fprintf('Done.\n\n');
             set(gui.session.start_date_edit, 'String', '');
             set(gui.session.note_edit, 'String', '');
             set(gui.session.type_popup, 'Value', 1);
+            data.session.active = 0;
         else
             val = get(gui.session.key_popup, 'Value');
             set(gui.session.start_date_edit, 'String', data.session.start_date(val));
@@ -1603,6 +1628,7 @@ fprintf('Done.\n\n');
                 type_val = 1;
             end
             set(gui.session.type_popup, 'Value', type_val);
+            data.session.active = data.session.id(val);
         end
         % TODO: update depending tables
     end
