@@ -108,6 +108,8 @@ fprintf('Done.\n\n');
         gui.menuitem_close = uimenu(gui.menu_file, 'Label', 'Quit', ...
             'Accelerator', 'Q');
         gui.menu_about = uimenu('Label', 'About');
+        
+        gui.page = 1;
                 
         % create first page
         [gui.project, data.project] = draw_project(gui.main);
@@ -965,10 +967,10 @@ fprintf('Done.\n\n');
         ui.continue_btn = uicontrol('Parent', ui.panel, ... 
             'Style', 'pushbutton', ...
             'Units', 'pixel', ...
-            'Enable', 'off', ...
+            'Enable', 'on', ...
             'Visible', 'on', ...
             'String', 'Continue', ...
-            'Callback', @continue_fcn, ...
+            'Callback', @turn_page_fcn, ...
             'Position', [65 30 120 40]);
         ui.continue_text = uicontrol('Parent', ui.panel, ...
             'Style', 'text', ...
@@ -1778,7 +1780,47 @@ fprintf('Done.\n\n');
             set(gui.session.type_popup, 'Value', 1);
         end
     end
+
+% (3.6) Continue / Back to page callbacks
+
+    function turn_page_fcn(src, evt)
+        if strcmp(get(src, 'String'), 'Continue')
+            gui.page = gui.page + 1;
+        elseif strcmp(get(src, 'String'), 'Back')
+            gui.page = gui.page - 1;
+        end
+        
+        switch gui.page
+            case 1
+                set_visible(gui.project, 'on');
+                set_visible(gui.experiment, 'on');
+                set_visible(gui.animal, 'on');
+                set_visible(gui.virusinjection, 'on');
+                set_visible(gui.session, 'on');
+                set_visible(gui.next1, 'on');
+            case 2
+                set_visible(gui.project, 'off');
+                set_visible(gui.experiment, 'off');
+                set_visible(gui.animal, 'off');
+                set_visible(gui.virusinjection, 'off');
+                set_visible(gui.session, 'off');
+                set_visible(gui.next1, 'off');
+            case 3
+            otherwise
+        end
+    end
+
+
 %% (4) helper functions
+
+    function set_visible(s, mode)
+        assert(any(strcmp(mode, {'on', 'off'})));
+        fields = fieldnames(s);
+        for i = 1:numel(fields)
+            set(s.(fields{i}), 'Visible', mode);
+        end
+    end
+
     % zip cellstring and integer into new cellstring
     function keystr = keystr_zipper(cellstr, id)
         n = length(cellstr);
