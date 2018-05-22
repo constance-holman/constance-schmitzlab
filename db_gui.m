@@ -15,47 +15,47 @@ fprintf(['Welcome to SchmitzLab database GUI!\n\n', ...
     'Looking for working MySQL connector... ']);
 
 % (1.2) test connector
-if exist('mysql', 'file') == 3
-    s = mysql('status');
-    if s == 1
-        fprintf('Done.\n\nTrying to establish connection... ');
-        try 
-            r = evalc('mysql(''open'', args.host, args.user, args.password)');
-            r = evalc('mysql(''use'', args.database)');
-        catch me
-            fprintf('Failed.\n');
-            error(me.message)
-        end
-        fprintf('Done.\n')
-    elseif s == 0
-        fprintf('Done.\n');
-        answer = input('A SQL connection is already opened, [c]ontinue, close [a]ll, [q]uit: ', 's');
-        if any(strcmpi(answer, {'c', 'continue'}))
-            % do nothing
-        elseif any(strcmpi(answer, {'a', 'ca', 'close', 'close all'}))
-            while mysql('status') == 0
-                mysql close;
-            end
-            fprintf('\nAll connections closed.\n')
-            fprintf('Trying to establish new connection... ');
-            try 
-                r = evalc('mysql(''open'', args.host, args.user, args.password)');
-                r = evalc('mysql(''use'', args.database)');
-            catch me
-                fprintf('Failed.\n');
-                error(me.message)
-            end
-            fprintf('Done.\n')
-        else
-            fprintf('\nOkay, bye.\n')
-            return;
-        end
-    else
-        error('Connector works not as expected.');
-    end
-else
-    error('MySQL connector not found on PATH.');
-end
+% if exist('mysql', 'file') == 3
+%     s = mysql('status');
+%     if s == 1
+%         fprintf('Done.\n\nTrying to establish connection... ');
+%         try 
+%             r = evalc('mysql(''open'', args.host, args.user, args.password)');
+%             r = evalc('mysql(''use'', args.database)');
+%         catch me
+%             fprintf('Failed.\n');
+%             error(me.message)
+%         end
+%         fprintf('Done.\n')
+%     elseif s == 0
+%         fprintf('Done.\n');
+%         answer = input('A SQL connection is already opened, [c]ontinue, close [a]ll, [q]uit: ', 's');
+%         if any(strcmpi(answer, {'c', 'continue'}))
+%             do nothing
+%         elseif any(strcmpi(answer, {'a', 'ca', 'close', 'close all'}))
+%             while mysql('status') == 0
+%                 mysql close;
+%             end
+%             fprintf('\nAll connections closed.\n')
+%             fprintf('Trying to establish new connection... ');
+%             try 
+%                 r = evalc('mysql(''open'', args.host, args.user, args.password)');
+%                 r = evalc('mysql(''use'', args.database)');
+%             catch me
+%                 fprintf('Failed.\n');
+%                 error(me.message)
+%             end
+%             fprintf('Done.\n')
+%         else
+%             fprintf('\nOkay, bye.\n')
+%             return;
+%         end
+%     else
+%         error('Connector works not as expected.');
+%     end
+% else
+%     error('MySQL connector not found on PATH.');
+% end
 
 % (1.3) init schema
 fprintf('\nInitializing database schema ... ');
@@ -72,10 +72,10 @@ init = which('db_init.m');
 fprintf('Done.\nSchema: ''%s''\n\nVerifying database:\n', init);
 
 % (1.4) verify database
-verified = verify_db(db, args);
-if ~verified
-    error('Database not compatible.')
-end
+% verified = verify_db(db, args);
+% if ~verified
+%     error('Database not compatible.')
+% end
 
 % (1.5) draw gui
 fprintf('Creating main window... ');
@@ -99,7 +99,7 @@ fprintf('Done.\n\n');
             'Name', 'SchmitzLab Database', ...
             'NumberTitle', 'off', ...
             'Color', bgColor, ...
-            'Position', [screenSz(1)/4, screenSz(2)+screenSz(2)/5, 1000 750], ...
+            'Position', [screenSz(1)/4, screenSz(2)+screenSz(2)/5, 1000 650], ...
             'ToolBar', 'none', ...
             'Resize', 'off');
         
@@ -128,7 +128,12 @@ fprintf('Done.\n\n');
         % get table data
         ui = struct(); % struct with ui handles
         dat = struct(); % struct with table data
-        [dat.id, dat.name] = mysql('select * from Project;');
+        try
+            [dat.id, dat.name] = mysql('select * from Project;');
+        catch err
+            dat.id = {};
+            dat.name = {};
+        end
         if numel(dat.id) == 0 % empty table
             popup_state = 'off';
             edit_state = 'on'; % show editbox, add and cancel btn
@@ -146,7 +151,7 @@ fprintf('Done.\n\n');
             'BorderType', 'line', ...
             'HighlightColor', [0 0 0], ...
             'Units', 'pixel', ...
-            'Position', [25 625 462.5 100]);
+            'Position', [25 525 462.5 100]);
         ui.title_text = uicontrol('Parent', ui.panel, ...
             'Style', 'text', ...
             'Units', 'pixel', ...
@@ -223,9 +228,15 @@ fprintf('Done.\n\n');
         % get table data
         ui = struct(); % struct with ui handles
         dat = struct(); % struct with table data
-        [dat.id, dat.experimenter, dat.description] = ...
-            mysql(sprintf('select experiment_id, experimenter, description from Experiment where project_id = %d;', ...
-            active));
+        try
+            [dat.id, dat.experimenter, dat.description] = ...
+                mysql(sprintf('select experiment_id, experimenter, description from Experiment where project_id = %d;', ...
+                active));
+        catch err
+            dat.id = {};
+            dat.experimenter = {};
+            dat.description = {};
+        end
         if active == 0 % no project selected
             popup_state = 'off';
             edit_state = 'off'; % show editbox, add and cancel btn
@@ -257,7 +268,7 @@ fprintf('Done.\n\n');
             'BorderType', 'line', ...
             'HighlightColor', [0 0 0], ...
             'Units', 'pixel', ...
-            'Position', [512.5 555 462.5 170]);
+            'Position', [512.5 455 462.5 170]);
         ui.title_text = uicontrol('Parent', ui.panel, ...
             'Style', 'text', ...
             'Units', 'pixel', ...
@@ -360,9 +371,18 @@ fprintf('Done.\n\n');
         % get table data
         ui = struct(); % struct with ui handles
         dat = struct(); % struct with table data
-        [dat.id, dat.genotype, dat.birthdate, dat.sex, dat.name, dat.pyrat_id] = ...
-            mysql(sprintf('select animal_id, genotype, birthdate, sex, name, pyrat_id from Animal where project_id = %d;', ...
-            active));
+        try
+            [dat.id, dat.genotype, dat.birthdate, dat.sex, dat.name, dat.pyrat_id] = ...
+                mysql(sprintf('select animal_id, genotype, birthdate, sex, name, pyrat_id from Animal where project_id = %d;', ...
+                active));
+        catch err
+            dat.id = {};
+            dat.genotype = {};
+            dat.birthdate = {};
+            dat.sex = {};
+            dat.name = {};
+            dat.pyrat_id = {};
+        end
         if active == 0 % no project selected
             popup_state = 'off';
             edit_state = 'off'; % show editbox, add and cancel btn
@@ -404,7 +424,7 @@ fprintf('Done.\n\n');
             'BorderType', 'line', ...
             'HighlightColor', [0 0 0], ...
             'Units', 'pixel', ...
-            'Position', [25 360 462.5 240]);
+            'Position', [25 260 462.5 240]);
         ui.title_text = uicontrol('Parent', ui.panel, ...
             'Style', 'text', ...
             'Units', 'pixel', ...
@@ -543,9 +563,18 @@ fprintf('Done.\n\n');
         % get table data
         ui = struct(); % struct with ui handles
         dat = struct(); % struct with table data
-        [dat.name, dat.x_coord, dat.y_coord, dat.date, dat.volume, dat.target] = ...
-            mysql(sprintf('select virus_name, x_coord, y_coord, date, volume, target from StereotacticInjection where animal_id = %d;', ...
-            active));
+        try
+            [dat.name, dat.x_coord, dat.y_coord, dat.date, dat.volume, dat.target] = ...
+                mysql(sprintf('select virus_name, x_coord, y_coord, date, volume, target from StereotacticInjection where animal_id = %d;', ...
+                active));
+        catch err
+            dat.name = {};
+            dat.x_coord = [];
+            dat.y_coord = [];
+            dat.date = {};
+            dat.volume = [];
+            dat.target = {};
+        end
         if active == 0 % no animal selected
             popup_state = 'off';
             edit_state = 'off'; % show editbox, add and cancel btn
@@ -586,7 +615,7 @@ fprintf('Done.\n\n');
             'BorderType', 'line', ...
             'HighlightColor', [0 0 0], ...
             'Units', 'pixel', ...
-            'Position', [512.5 255 462.5 275]);
+            'Position', [512.5 155 462.5 275]);
         ui.title_text = uicontrol('Parent', ui.panel, ...
             'Style', 'text', ...
             'Units', 'pixel', ...
@@ -756,9 +785,16 @@ fprintf('Done.\n\n');
         % get table data
         ui = struct(); % struct with ui handles
         dat = struct(); % struct with table data
-        [dat.id, dat.start_date, dat.note, dat.type] = ...
-            mysql(sprintf('select session_id, start_date, note, session_type from Session where animal_id = %d and experiment_id = %d;', ...
-            animal, experiment));
+        try
+            [dat.id, dat.start_date, dat.note, dat.type] = ...
+                mysql(sprintf('select session_id, start_date, note, session_type from Session where animal_id = %d and experiment_id = %d;', ...
+                animal, experiment));
+        catch err
+            dat.id = [];
+            dat.start_date = {};
+            dat.note = {};
+            dat.type = {};
+        end
         if animal == 0 || experiment == 0
             popup_state = 'off';
             edit_state = 'off'; % show editbox, add and cancel btn
@@ -800,7 +836,7 @@ fprintf('Done.\n\n');
             'BorderType', 'line', ...
             'HighlightColor', [0 0 0], ...
             'Units', 'pixel', ...
-            'Position', [25 125 462.5 210]);
+            'Position', [25 25 462.5 210]);
         ui.title_text = uicontrol('Parent', ui.panel, ...
             'Style', 'text', ...
             'Units', 'pixel', ...
@@ -925,15 +961,24 @@ fprintf('Done.\n\n');
             'BorderType', 'line', ...
             'HighlightColor', [0 0 0], ...
             'Units', 'pixel', ...
-            'Position', [512.5 125 462.5 50]);
+            'Position', [512.5 25 462.5 105]);
         ui.continue_btn = uicontrol('Parent', ui.panel, ... 
             'Style', 'pushbutton', ...
             'Units', 'pixel', ...
-            'Enable', edit_state, ...
+            'Enable', 'off', ...
             'Visible', 'on', ...
-            'String', 'x', ...
+            'String', 'Continue', ...
             'Callback', @continue_fcn, ...
-            'Position', [412.5 200 25 25]);
+            'Position', [65 30 120 40]);
+        ui.continue_text = uicontrol('Parent', ui.panel, ...
+            'Style', 'text', ...
+            'Units', 'pixel', ...
+            'FontSize', 10, ...
+            'String', sprintf('+   Add / Insert new\n-   Remove selected\nx   Cancel'), ...
+            'Enable', 'off', ...
+            'HorizontalAlignment', 'left', ...
+            'Visible', 'on', ...
+            'Position', [260 22.5 200 60]);
     end
         
 %% (3) ui callback functions
