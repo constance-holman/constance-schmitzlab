@@ -1,3 +1,3 @@
 [submodule "sql"]
 	path = sql
-	url = git@git.bccn-berlin.pri:viktor/schmitzlab_sql.git
+	url = http://git.bccn-berlin.pri:viktor/schmitzlab_sql.git
