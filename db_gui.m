@@ -1187,7 +1187,8 @@ fprintf('Done.\n\n');
             'Enable', 'on', ...
             'Visible', 'on', ...
             'String', 'Select', ...
-            'Callback', @project_add_fcn, ...
+            'Callback', @behavior_select_fcn, ...
+            'Tag', 'position', ...
             'Position', [625 75 75 25]);
         ui.pulse_text = uicontrol('Parent', ui.panel, ...
             'Style', 'text', ...
@@ -1201,16 +1202,17 @@ fprintf('Done.\n\n');
         ui.pulse_edit = uicontrol('Parent', ui.panel, ...
             'Style', 'edit', ...
             'Units', 'pixel', ...
-            'Enable', 'on', ...
+            'Enable', 'off', ...
             'Visible', edit_state, ...
             'Position', [385 20 220 25]);
         ui.pulse_btn = uicontrol('Parent', ui.panel, ... 
             'Style', 'pushbutton', ...
             'Units', 'pixel', ...
-            'Enable', 'on', ...
+            'Enable', 'off', ...
             'Visible', 'on', ...
             'String', 'Select', ...
-            'Callback', @project_add_fcn, ...
+            'Callback', @behavior_select_fcn, ...
+            'Tag', 'pulse', ...
             'Position', [625 20 75 25]);
         ui.key_add_btn = uicontrol('Parent', ui.panel, ... 
             'Style', 'pushbutton', ...
@@ -1218,7 +1220,7 @@ fprintf('Done.\n\n');
             'Enable', popup_state, ...
             'Visible', 'on', ...
             'String', '+', ...
-            'Callback', @project_add_fcn, ...
+            'Callback', @behavior_add_fcn, ...
             'Position', [340 85 25 25]);
         ui.key_rem_btn = uicontrol('Parent', ui.panel, ... 
             'Style', 'pushbutton', ...
@@ -1226,7 +1228,7 @@ fprintf('Done.\n\n');
             'Enable', popup_state, ...
             'Visible', 'on', ...
             'String', '-', ...
-            'Callback', @project_rem_fcn, ...
+            'Callback', @behavior_rem_fcn, ...
             'Position', [340 55 25 25]);
         ui.key_cancel_btn = uicontrol('Parent', ui.panel, ... 
             'Style', 'pushbutton', ...
@@ -1234,7 +1236,7 @@ fprintf('Done.\n\n');
             'Enable', edit_state, ...
             'Visible', 'on', ...
             'String', 'x', ...
-            'Callback', @project_cancel_fcn, ...
+            'Callback', @behavior_cancel_fcn, ...
             'Position', [340 25 25 25]);
     end
 
@@ -2086,6 +2088,122 @@ fprintf('Done.\n\n');
             case 3
             otherwise
         end
+    end
+
+% (3.7) Behavior table callbacks
+
+
+    function behavior_update_fcn()
+        [   data.behavior.real_x, data.behavior.real_y, ...
+            data.behavior.virt_x, data.behavior.virt_y, ...
+            data.behavior.time, data.behavior.virt_end] = ...
+                mysql(sprintf('select real_x, real_y, virt_x, virt_y, time, virt_end from Behavior where session_id = %d;', ...
+                data.session.active));
+        if data.session.active == -1
+            edit_state = 'off'; % show editbox, add and cancel btn
+            rem_state = 'off';
+        elseif numel(data.behavior.time) == 0 % empty table where session_id
+            edit_state = 'on'; % show editbox, add and cancel btn
+            rem_state = 'off';
+        else % populated table
+            edit_state = 'on';
+            rem_state = 'on';
+        end
+        
+        set(gui.behavior.table, 'Data', ...
+            [data.behavior.real_x, data.behavior.real_y, ...
+             data.behavior.virt_x, data.behavior.virt_y, ...
+             data.behavior.time, data.behavior.virt_end]);
+        
+        set(gui.behavior.position_edit, 'Enable', edit_state);
+        set(gui.behavior.position_btn, 'Enable', edit_state);
+        set(gui.behavior.pulse_edit, 'Enable', edit_state);
+        set(gui.behavior.pulse_btn, 'Enable', edit_state),
+        set(gui.behavior.table, 'Enable', edit_state);
+        set(gui.behavior.key_rem_btn, 'Enable', rem_state);
+        set(gui.behavior.key_cancel_btn, 'Enable', edit_state);
+    end
+
+    function behavior_select_fcn(src, event)
+        switch get(src, 'Tag')
+            case 'position'
+                [fname, fpath] = uigetfile('*', 'Pick a position file.');
+                if isnumeric(fname) % selection canceled
+                    set(gui.behavior.pulse_edit, 'Enable', 'off');
+                    set(gui.behavior.pulse_btn, 'Enable', 'off');
+                    set(gui.behavior.key_add_btn, 'Enable', 'off');
+                    return
+                end
+                posf = fullfile(fpath, fname);
+                if exist(posf, 'file') ~= 2; error('Unable to locate %s', fname); end
+                set(gui.behavior.position_edit, 'String', posf);
+                set(gui.behavior.pulse_edit, 'Enable', 'on');
+                set(gui.behavior.pulse_btn, 'Enable', 'on');
+            case 'pulse'
+                posf = get(gui.behavior.position_edit, 'String');
+                [fname, fpath] = uigetfile('*', 'Pick a pulse file.');
+                if isempty(posf)
+                    set(gui.behavior.pulse_edit, 'Enable', 'off');
+                    set(gui.behavior.pulse_btn, 'Enable', 'off');
+                    set(gui.behavior.key_add_btn, 'Enable', 'off');
+                    set(gui.behavior.pulse_edit, 'String', '');
+                    return
+                elseif isnumeric(fname)
+                    set(gui.behavior.key_add_btn, 'Enable', 'off');
+                    return
+                end
+                pulsef = fullfile(fpath, fname);
+                if exist(posf, 'file') ~= 2; error('Unable to locate %s', posf); end
+                if exist(pulsef, 'file') ~= 2; error('Unable to locate %s', fname); end
+                set(gui.behavior.pulse_edit, 'String', pulsef);
+                set(gui.behavior.key_add_btn, 'Enable', 'on');
+            otherwise
+                return
+        end
+    end
+
+    function behavior_add_fcn(src, event)
+        posf = get(gui.behavior.position_edit, 'String');
+        pulsef = get(gui.behavior.pulse_edit, 'String');
+        if isempty(posf) || isempty(pulsef)
+            set(gui.behavior.key_add_btn, 'Enable', 'off');
+            return
+        end
+        if exist(posf, 'file') ~= 2
+            set(gui.behavior.position_edit, 'String', '');
+            set(gui.behavior.pulse_edit, 'String', '');
+            set(gui.behavior.pulse_edit, 'Enable', 'off');
+            set(gui.behavior.pulse_btn, 'Enable', 'off');
+            set(gui.behavior.key_add_btn, 'Enable', 'off');
+            error('Unable to locate %s', posf)
+        end
+        if exist(pulsef, 'file') ~= 2
+            set(gui.behavior.pulse_edit, 'String', '');
+            set(gui.behavior.key_add_btn, 'Enable', 'off');
+            error('Unable to locate %s', fname)
+        end
+        % TODO: import
+        % TODO: insert
+        behavior_update_fcn();
+        set(gui.behavior.position_edit, 'String', '');
+        set(gui.behavior.pulse_edit, 'String', '');
+        set(gui.behavior.pulse_edit, 'Enable', 'off');
+        set(gui.behavior.pulse_btn, 'Enable', 'off');
+        set(gui.behavior.key_add_btn, 'Enable', 'off');
+    end
+
+    function behavior_rem_fcn(src, event)
+        % TODO: Get uitable cell selection
+        % TODO: Drop selected rows from table
+        behavior_update_fcn(src, event);
+    end
+
+    function behavior_cancel_fcn(src, event)
+        set(gui.behavior.position_edit, 'String', '');
+        set(gui.behavior.pulse_edit, 'String', '');
+        set(gui.behavior.pulse_edit, 'Enable', 'off');
+        set(gui.behavior.pulse_btn, 'Enable', 'off');
+        set(gui.behavior.key_add_btn, 'Enable', 'off');
     end
 
 
