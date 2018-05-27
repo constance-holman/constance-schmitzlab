@@ -15,47 +15,47 @@ fprintf(['Welcome to SchmitzLab database GUI!\n\n', ...
     'Looking for working MySQL connector... ']);
 
 % (1.2) test connector
-% if exist('mysql', 'file') == 3
-%     s = mysql('status');
-%     if s == 1
-%         fprintf('Done.\n\nTrying to establish connection... ');
-%         try 
-%             r = evalc('mysql(''open'', args.host, args.user, args.password)');
-%             r = evalc('mysql(''use'', args.database)');
-%         catch me
-%             fprintf('Failed.\n');
-%             error(me.message)
-%         end
-%         fprintf('Done.\n')
-%     elseif s == 0
-%         fprintf('Done.\n');
-%         answer = input('A SQL connection is already opened, [c]ontinue, close [a]ll, [q]uit: ', 's');
-%         if any(strcmpi(answer, {'c', 'continue'}))
-%             do nothing
-%         elseif any(strcmpi(answer, {'a', 'ca', 'close', 'close all'}))
-%             while mysql('status') == 0
-%                 mysql close;
-%             end
-%             fprintf('\nAll connections closed.\n')
-%             fprintf('Trying to establish new connection... ');
-%             try 
-%                 r = evalc('mysql(''open'', args.host, args.user, args.password)');
-%                 r = evalc('mysql(''use'', args.database)');
-%             catch me
-%                 fprintf('Failed.\n');
-%                 error(me.message)
-%             end
-%             fprintf('Done.\n')
-%         else
-%             fprintf('\nOkay, bye.\n')
-%             return;
-%         end
-%     else
-%         error('Connector works not as expected.');
-%     end
-% else
-%     error('MySQL connector not found on PATH.');
-% end
+if exist('mysql', 'file') == 3
+    s = mysql('status');
+    if s == 1
+        fprintf('Done.\n\nTrying to establish connection... ');
+        try 
+            r = evalc('mysql(''open'', args.host, args.user, args.password)');
+            r = evalc('mysql(''use'', args.database)');
+        catch me
+            fprintf('Failed.\n');
+            error(me.message)
+        end
+        fprintf('Done.\n')
+    elseif s == 0
+        fprintf('Done.\n');
+        answer = input('A SQL connection is already opened, [c]ontinue, close [a]ll, [q]uit: ', 's');
+        if any(strcmpi(answer, {'c', 'continue'}))
+            % do nothing
+        elseif any(strcmpi(answer, {'a', 'ca', 'close', 'close all'}))
+            while mysql('status') == 0
+                mysql close;
+            end
+            fprintf('\nAll connections closed.\n')
+            fprintf('Trying to establish new connection... ');
+            try 
+                r = evalc('mysql(''open'', args.host, args.user, args.password)');
+                r = evalc('mysql(''use'', args.database)');
+            catch me
+                fprintf('Failed.\n');
+                error(me.message)
+            end
+            fprintf('Done.\n')
+        else
+            fprintf('\nOkay, bye.\n')
+            return;
+        end
+    else
+        error('Connector works not as expected.');
+    end
+else
+    error('MySQL connector not found on PATH.');
+end
 
 % (1.3) init schema
 fprintf('\nInitializing database schema ... ');
@@ -72,10 +72,10 @@ init = which('db_init.m');
 fprintf('Done.\nSchema: ''%s''\n\nVerifying database:\n', init);
 
 % (1.4) verify database
-% verified = verify_db(db, args);
-% if ~verified
-%     error('Database not compatible.')
-% end
+verified = verify_db(db, args);
+if ~verified
+    error('Database not compatible.')
+end
 
 % (1.5) draw gui
 fprintf('Creating main window... ');
@@ -123,7 +123,7 @@ fprintf('Done.\n\n');
         [gui.session, data.session] = ...
             draw_session(gui.main, data.animal.active, data.experiment.active);
         [gui.next1] = ...
-            draw_next1(gui.main);
+            draw_next1(gui.main, data.session.active);
         % draw second page
         [gui.quickselect1] = ...
             draw_quickselect1(gui.main);
@@ -147,7 +147,7 @@ fprintf('Done.\n\n');
             popup_state = 'off';
             edit_state = 'on'; % show editbox, add and cancel btn
             key_str = {''};
-            dat.active = 0;
+            dat.active = -1;
         else % populated table
             popup_state = 'on'; % show key select popup
             edit_state = 'off';
@@ -246,14 +246,14 @@ fprintf('Done.\n\n');
             dat.experimenter = {};
             dat.description = {};
         end
-        if active == 0 % no project selected
+        if active == -1 % no project selected
             popup_state = 'off';
             edit_state = 'off'; % show editbox, add and cancel btn
             add_state = 'off';
             key_str = {'No project selected'};
             experimenter_str = '';
             description_str = '';
-            dat.active = 0;
+            dat.active = -1;
         elseif numel(dat.id) == 0 % empty table where project_id
             popup_state = 'off';
             edit_state = 'on'; % show editbox, add and cancel btn
@@ -261,7 +261,7 @@ fprintf('Done.\n\n');
             key_str = {'Create new'};
             experimenter_str = '';
             description_str = '';
-            dat.active = 0;
+            dat.active = -1;
         else % populated table
             popup_state = 'on'; % show key select popup
             edit_state = 'off';
@@ -392,7 +392,7 @@ fprintf('Done.\n\n');
             dat.name = {};
             dat.pyrat_id = {};
         end
-        if active == 0 % no project selected
+        if active == -1 % no project selected
             popup_state = 'off';
             edit_state = 'off'; % show editbox, add and cancel btn
             add_state = 'off';
@@ -401,7 +401,7 @@ fprintf('Done.\n\n');
             genotype_str = '';
             sex_val = 1;
             birthdate_str = '';
-            dat.active = 0;
+            dat.active = -1;
         elseif numel(dat.id) == 0 % empty table where project_id
             popup_state = 'off';
             edit_state = 'on'; % show editbox, add and cancel btn
@@ -411,7 +411,7 @@ fprintf('Done.\n\n');
             genotype_str = '';
             sex_val = 1;
             birthdate_str = '';
-            dat.active = 0;
+            dat.active = -1;
         else % populated table
             popup_state = 'on'; % show key select popup
             edit_state = 'off';
@@ -584,7 +584,7 @@ fprintf('Done.\n\n');
             dat.volume = [];
             dat.target = {};
         end
-        if active == 0 % no animal selected
+        if active == -1 % no animal selected
             popup_state = 'off';
             edit_state = 'off'; % show editbox, add and cancel btn
             add_state = 'off';
@@ -804,7 +804,7 @@ fprintf('Done.\n\n');
             dat.note = {};
             dat.type = {};
         end
-        if animal == 0 || experiment == 0
+        if animal == -1 || experiment == -1
             popup_state = 'off';
             edit_state = 'off'; % show editbox, add and cancel btn
             add_state = 'off';
@@ -812,7 +812,7 @@ fprintf('Done.\n\n');
             start_date_str = '';
             note_str = '';
             type_val = 1;
-            dat.active = 0;
+            dat.active = -1;
         elseif numel(dat.id) == 0 % empty table where animal_id, experiment_id
             popup_state = 'off';
             edit_state = 'on'; % show editbox, add and cancel btn
@@ -821,7 +821,7 @@ fprintf('Done.\n\n');
             start_date_str = '';
             note_str = '';
             type_val = 1;
-            dat.active = 0;
+            dat.active = -1;
         else % populated table
             popup_state = 'on'; % show key select popup
             edit_state = 'off';
@@ -964,7 +964,12 @@ fprintf('Done.\n\n');
     end
 
 % (2.5) draw next button panel
-    function [ui] = draw_next1(main)
+    function [ui] = draw_next1(main, session)
+        if session < 0 % no session selected
+            state = 'off';
+        else
+            state = 'on';
+        end
         % draw ui controls
         ui.panel = uipanel('Parent', main, ...
             'BorderType', 'line', ...
@@ -974,7 +979,7 @@ fprintf('Done.\n\n');
         ui.continue_btn = uicontrol('Parent', ui.panel, ... 
             'Style', 'pushbutton', ...
             'Units', 'pixel', ...
-            'Enable', 'on', ...
+            'Enable', state, ...
             'Visible', 'on', ...
             'String', 'Continue', ...
             'Callback', @turn_page_fcn, ...
@@ -1005,7 +1010,8 @@ fprintf('Done.\n\n');
             'BorderType', 'line', ...
             'HighlightColor', [0 0 0], ...
             'Units', 'pixel', ...
-            'Position', [25 397.5 155 227.5]);
+            'Position', [25 397.5 155 227.5], ...
+            'Visible', 'off');
         ui.title_text = uicontrol('Parent', ui.panel, ...
             'Style', 'text', ...
             'Units', 'pixel', ...
@@ -1132,7 +1138,8 @@ fprintf('Done.\n\n');
             'BorderType', 'line', ...
             'HighlightColor', [0 0 0], ...
             'Units', 'pixel', ...
-            'Position', [205 455 769 170]);
+            'Position', [205 455 769 170], ...
+            'Visible', 'off');
         ui.title_text = uicontrol('Parent', ui.panel, ...
             'Style', 'text', ...
             'Units', 'pixel', ...
@@ -1224,7 +1231,7 @@ fprintf('Done.\n\n');
 % (3.1) project table callbacks  
     function project_select_fcn(src, event)
         if isempty(data.project.id)
-            data.project.active = 0;
+            data.project.active = -1;
         else
             data.project.active = data.project.id(get(gui.project.key_popup, 'Value'));
         end
@@ -1301,14 +1308,14 @@ fprintf('Done.\n\n');
         [data.experiment.id, data.experiment.experimenter, data.experiment.description] = ...
             mysql(sprintf('select experiment_id, experimenter, description from Experiment where project_id = %d;', ...
             data.project.active));
-        if data.project.active == 0 % no project selected
+        if data.project.active == -1 % no project selected
             popup_state = 'off';
             edit_state = 'off'; % show editbox, add and cancel btn
             add_state = 'off';
             key_str = {'No project selected'};
             experimenter_str = '';
             description_str = '';
-            data.experiment.active = 0;
+            data.experiment.active = -1;
         elseif numel(data.experiment.id) == 0 % empty table where project_id
             popup_state = 'off';
             edit_state = 'on'; % show editbox, add and cancel btn
@@ -1316,7 +1323,7 @@ fprintf('Done.\n\n');
             key_str = {'Create new'};
             experimenter_str = '';
             description_str = '';
-            data.experiment.active = 0;
+            data.experiment.active = -1;
         else % populated table
             popup_state = 'on'; % show key select popup
             edit_state = 'off';
@@ -1341,7 +1348,7 @@ fprintf('Done.\n\n');
 
     function experiment_select_fcn(src, event)
         if isempty(data.experiment.id)
-            data.experiment.active = 0;
+            data.experiment.active = -1;
             set(gui.experiment.experimenter_edit, 'String', '');
             set(gui.experiment.description_edit, 'String', '');
         else
@@ -1449,7 +1456,7 @@ fprintf('Done.\n\n');
         [data.animal.id, data.animal.genotype, data.animal.birthdate, data.animal.sex, data.animal.name, data.animal.pyrat_id] = ...
             mysql(sprintf('select animal_id, genotype, birthdate, sex, name, pyrat_id from Animal where project_id = %d;', ...
             data.project.active));
-        if data.project.active == 0 % no project selected
+        if data.project.active == -1 % no project selected
             popup_state = 'off';
             edit_state = 'off'; % show editbox, add and cancel btn
             add_state = 'off';
@@ -1458,7 +1465,7 @@ fprintf('Done.\n\n');
             genotype_str = '';
             sex_val = 1;
             birthdate_str = '';
-            data.animal.active = 0;
+            data.animal.active = -1;
         elseif numel(data.experiment.id) == 0 % empty table where project_id
             popup_state = 'off';
             edit_state = 'on'; % show editbox, add and cancel btn
@@ -1468,7 +1475,7 @@ fprintf('Done.\n\n');
             genotype_str = '';
             sex_val = 1;
             birthdate_str = '';
-            data.animal.active = 0;
+            data.animal.active = -1;
         else % populated table
             popup_state = 'on'; % show key select popup
             edit_state = 'off';
@@ -1503,7 +1510,7 @@ fprintf('Done.\n\n');
 
     function animal_select_fcn(src, event)
         if isempty(data.animal.id)
-            data.animal.active = 0;
+            data.animal.active = -1;
             set(gui.animal.name_edit, 'String', '');
             set(gui.animal.genotype_edit, 'String', '');
             set(gui.animal.sex_popup, 'Value', 1);
@@ -1638,7 +1645,7 @@ fprintf('Done.\n\n');
         [data.virusinjection.name, data.virusinjection.x_coord, data.virusinjection.y_coord, data.virusinjection.date, data.virusinjection.volume, data.virusinjection.target] = ...
             mysql(sprintf('select virus_name, x_coord, y_coord, date, volume, target from StereotacticInjection where animal_id = %d;', ...
             data.animal.active));
-        if data.animal.active == 0 % no animal selected
+        if data.animal.active == -1 % no animal selected
             popup_state = 'off';
             edit_state = 'off'; % show editbox, add and cancel btn
             add_state = 'off';
@@ -1841,7 +1848,7 @@ fprintf('Done.\n\n');
         [data.session.id, data.session.start_date, data.session.note, data.session.type] = ...
             mysql(sprintf('select session_id, start_date, note, session_type from Session where animal_id = %d and experiment_id = %d;', ...
             data.animal.active, data.experiment.active));
-        if data.animal.active == 0 || data.experiment.active == 0
+        if data.animal.active == -1 || data.experiment.active == -1
             popup_state = 'off';
             edit_state = 'off'; % show editbox, add and cancel btn
             add_state = 'off';
@@ -1849,7 +1856,7 @@ fprintf('Done.\n\n');
             start_date_str = '';
             note_str = '';
             type_val = 1;
-            data.session.active = 0;
+            data.session.active = -1;
         elseif numel(data.session.id) == 0 % empty table where project_id
             popup_state = 'off';
             edit_state = 'on'; % show editbox, add and cancel btn
@@ -1858,7 +1865,7 @@ fprintf('Done.\n\n');
             start_date_str = '';
             note_str = '';
             type_val = 1;
-            data.session.active = 0;
+            data.session.active = -1;
         else % populated table
             popup_state = 'on'; % show key select popup
             edit_state = 'off';
@@ -1897,7 +1904,8 @@ fprintf('Done.\n\n');
             set(gui.session.start_date_edit, 'String', '');
             set(gui.session.note_edit, 'String', '');
             set(gui.session.type_popup, 'Value', 1);
-            data.session.active = 0;
+            set(gui.next1.continue_btn, 'Enable', 'off');
+            data.session.active = -1;
         else
             val = get(gui.session.key_popup, 'Value');
             set(gui.session.start_date_edit, 'String', data.session.start_date(val));
@@ -1913,6 +1921,7 @@ fprintf('Done.\n\n');
             end
             set(gui.session.type_popup, 'Value', type_val);
             data.session.active = data.session.id(val);
+            set(gui.next1.continue_btn, 'Enable', 'on');
         end
         % TODO: update depending tables
     end
@@ -2035,6 +2044,8 @@ fprintf('Done.\n\n');
                 set_visible(gui.virusinjection, 'on');
                 set_visible(gui.session, 'on');
                 set_visible(gui.next1, 'on');
+                set_visible(gui.quickselect1, 'off');
+                set_visible(gui.behavior, 'off');
             case 2
                 set_visible(gui.project, 'off');
                 set_visible(gui.experiment, 'off');
@@ -2042,6 +2053,8 @@ fprintf('Done.\n\n');
                 set_visible(gui.virusinjection, 'off');
                 set_visible(gui.session, 'off');
                 set_visible(gui.next1, 'off');
+                set_visible(gui.quickselect1, 'on');
+                set_visible(gui.behavior, 'on');
             case 3
             otherwise
         end
