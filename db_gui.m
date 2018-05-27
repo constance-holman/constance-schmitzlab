@@ -1253,7 +1253,7 @@ fprintf('Done.\n\n');
         if isempty(data.project.id)
             data.project.active = -1;
         else
-            data.project.active = data.project.id(get(gui.project.key_popup, 'Value'));
+            data.project.active = data.project.id(get(src, 'Value'));
         end
         % update depending tables
         experiment_update_fcn();
@@ -1364,6 +1364,9 @@ fprintf('Done.\n\n');
         set(gui.experiment.key_add_btn, 'Enable', add_state);
         set(gui.experiment.key_rem_btn, 'Enable', popup_state);
         set(gui.experiment.key_cancel_btn, 'Enable', edit_state);
+        
+        % update depending tables
+        session_update_fcn();
     end
 
     function experiment_select_fcn(src, event)
@@ -1372,12 +1375,12 @@ fprintf('Done.\n\n');
             set(gui.experiment.experimenter_edit, 'String', '');
             set(gui.experiment.description_edit, 'String', '');
         else
-            val = get(gui.experiment.key_popup, 'Value');
+            val = get(src, 'Value');
             data.experiment.active = data.experiment.id(val);
             set(gui.experiment.experimenter_edit, 'String', data.experiment.experimenter(val));
             set(gui.experiment.description_edit, 'String', data.experiment.description(val));
         end
-        % TODO: update depending tables
+        % update depending tables
         session_update_fcn();
     end
 
@@ -1526,6 +1529,10 @@ fprintf('Done.\n\n');
         set(gui.animal.key_add_btn, 'Enable', add_state);
         set(gui.animal.key_rem_btn, 'Enable', popup_state);
         set(gui.animal.key_cancel_btn, 'Enable', edit_state);
+        
+        % update depending tables
+        virusinjection_update_fcn();
+        session_update_fcn();
     end
 
     function animal_select_fcn(src, event)
@@ -1536,7 +1543,7 @@ fprintf('Done.\n\n');
             set(gui.animal.sex_popup, 'Value', 1);
             set(gui.animal.birthdate_edit, 'String', '');
         else
-            val = get(gui.animal.key_popup, 'Value');
+            val = get(src, 'Value');
             data.animal.active = data.animal.id(val);
             set(gui.animal.name_edit, 'String', data.animal.name(val));
             set(gui.animal.genotype_edit, 'String', data.animal.genotype(val));
@@ -1548,7 +1555,7 @@ fprintf('Done.\n\n');
             set(gui.animal.sex_popup, 'Value', sex_val);
             set(gui.animal.birthdate_edit, 'String', data.animal.birthdate(val));
         end
-        % TODO: update depending tables
+        % update depending tables
         virusinjection_update_fcn();
         session_update_fcn();
     end
@@ -1917,6 +1924,9 @@ fprintf('Done.\n\n');
         set(gui.session.key_add_btn, 'Enable', add_state);
         set(gui.session.key_rem_btn, 'Enable', popup_state);
         set(gui.session.key_cancel_btn, 'Enable', edit_state);
+        
+        % update depending tables
+        behavior_update_fcn();
     end
 
     function session_select_fcn(src, event)
@@ -1927,7 +1937,7 @@ fprintf('Done.\n\n');
             set(gui.next1.continue_btn, 'Enable', 'off');
             data.session.active = -1;
         else
-            val = get(gui.session.key_popup, 'Value');
+            val = get(src, 'Value');
             set(gui.session.start_date_edit, 'String', data.session.start_date(val));
             set(gui.session.note_edit, 'String', data.session.note(val));
             if strcmpi(data.session.type(val), 'behav')
@@ -1943,7 +1953,9 @@ fprintf('Done.\n\n');
             data.session.active = data.session.id(val);
             set(gui.next1.continue_btn, 'Enable', 'on');
         end
-        % TODO: update depending tables
+        
+        % update depending tables
+        behavior_update_fcn();
     end
 
     function session_add_fcn(src, event)
