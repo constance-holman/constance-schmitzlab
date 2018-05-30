@@ -573,13 +573,14 @@ fprintf('Done.\n\n');
         ui = struct(); % struct with ui handles
         dat = struct(); % struct with table data
         try
-            [dat.name, dat.x_coord, dat.y_coord, dat.date, dat.volume, dat.target] = ...
-                mysql(sprintf('select virus_name, x_coord, y_coord, date, volume, target from StereotacticInjection where animal_id = %d;', ...
+            [dat.name, dat.x_coord, dat.y_coord, dat.z_coord, dat.date, dat.volume, dat.target] = ...
+                mysql(sprintf('select virus_name, x_coord, y_coord, z_coord, date, volume, target from StereotacticInjection where animal_id = %d;', ...
                 active));
         catch err
             dat.name = {};
             dat.x_coord = [];
             dat.y_coord = [];
+            dat.z_coord = [];
             dat.date = {};
             dat.volume = [];
             dat.target = {};
@@ -592,6 +593,7 @@ fprintf('Done.\n\n');
             name_str = '';
             x_str = '';
             y_str = '';
+            z_str = '';
             date_str = '';
             volume_str = '';
             target_str = '';
@@ -603,6 +605,7 @@ fprintf('Done.\n\n');
             name_str = '';
             x_str = '';
             y_str = '';
+            z_str = '';
             date_str = '';
             volume_str = '';
             target_str = '';
@@ -612,8 +615,9 @@ fprintf('Done.\n\n');
             add_state = 'on';
             key_str = keystr_zipper(dat.name, 1:length(dat.name));
             name_str = dat.name(1);
-            x_str = dat.x_coord;
-            y_str = dat.y_coord;
+            x_str = dat.x_coord(1);
+            y_str = dat.y_coord(1);
+            z_str = dat.z_coord(1);
             date_str = dat.date(1);
             volume_str = dat.volume(1);
             target_str = dat.target(1);
@@ -696,7 +700,7 @@ fprintf('Done.\n\n');
             'String', x_str, ...
             'HorizontalAlignment', 'center', ...
             'Visible', 'on', ...
-            'Position', [120 125 70 25]);
+            'Position', [115 125 50 25]);
         ui.y_text = uicontrol('Parent', ui.panel, ...
             'Style', 'text', ...
             'Units', 'pixel', ...
@@ -705,16 +709,34 @@ fprintf('Done.\n\n');
             'Enable', 'on', ...
             'HorizontalAlignment', 'left', ...
             'Visible', 'on', ...
-            'Position', [215 120 20 26]);
+            'Position', [170 120 20 26]);
         ui.y_edit = uicontrol('Parent', ui.panel, ...
             'Style', 'edit', ...
             'Units', 'pixel', ...
             'Enable', edit_state, ...
             'Visible', 'on', ...
-            'Position', [252.5 125 70 25], ...
+            'Position', [195 125 50 25], ...
             'FontSize', 10, ...
             'HorizontalAlignment', 'center', ...
             'String', y_str);
+        ui.z_text = uicontrol('Parent', ui.panel, ...
+            'Style', 'text', ...
+            'Units', 'pixel', ...
+            'FontSize', 10, ...
+            'String', 'Z:', ...
+            'Enable', 'on', ...
+            'HorizontalAlignment', 'left', ...
+            'Visible', 'on', ...
+            'Position', [247 120 20 26]);
+        ui.z_edit = uicontrol('Parent', ui.panel, ...
+            'Style', 'edit', ...
+            'Units', 'pixel', ...
+            'Enable', edit_state, ...
+            'Visible', 'on', ...
+            'Position', [272.5 125 50 25], ...
+            'FontSize', 10, ...
+            'HorizontalAlignment', 'center', ...
+            'String', z_str);
         ui.date_text = uicontrol('Parent', ui.panel, ...
             'Style', 'text', ...
             'Units', 'pixel', ...
@@ -1671,7 +1693,7 @@ fprintf('Done.\n\n');
 
     function virusinjection_update_fcn()
         [data.virusinjection.name, data.virusinjection.x_coord, data.virusinjection.y_coord, data.virusinjection.date, data.virusinjection.volume, data.virusinjection.target] = ...
-            mysql(sprintf('select virus_name, x_coord, y_coord, date, volume, target from StereotacticInjection where animal_id = %d;', ...
+            mysql(sprintf('select virus_name, x_coord, y_coord, z_coord, date, volume, target from StereotacticInjection where animal_id = %d;', ...
             data.animal.active));
         if data.animal.active == -1 % no animal selected
             popup_state = 'off';
@@ -1681,6 +1703,7 @@ fprintf('Done.\n\n');
             name_str = '';
             x_str = '';
             y_str = '';
+            z_str = '';
             date_str = '';
             volume_str = '';
             target_str = '';
@@ -1692,6 +1715,7 @@ fprintf('Done.\n\n');
             name_str = '';
             x_str = '';
             y_str = '';
+            z_str = '';
             date_str = '';
             volume_str = '';
             target_str = '';
@@ -1703,6 +1727,7 @@ fprintf('Done.\n\n');
             name_str = data.virusinjection.name(1);
             x_str = num2str(data.virusinjection.x_coord(1));
             y_str = num2str(data.virusinjection.y_coord(1));
+            z_str = num2str(data.virusinjection.z_coord(1));
             date_str = data.virusinjection.date(1);
             volume_str = num2str(data.virusinjection.volume(1));
             target_str = data.virusinjection.target(1);
@@ -1717,6 +1742,8 @@ fprintf('Done.\n\n');
         set(gui.virusinjection.x_edit, 'String', x_str);
         set(gui.virusinjection.y_edit, 'Enable', edit_state);
         set(gui.virusinjection.y_edit, 'String', y_str);
+        set(gui.virusinjection.z_edit, 'Enable', edit_state);
+        set(gui.virusinjection.z_edit, 'String', z_str);
         set(gui.virusinjection.date_edit, 'Enable', edit_state);
         set(gui.virusinjection.date_edit, 'String', date_str);
         set(gui.virusinjection.volume_edit, 'Enable', edit_state);
@@ -1733,6 +1760,7 @@ fprintf('Done.\n\n');
             set(gui.virusinjection.name_edit, 'String', '');
             set(gui.virusinjection.x_edit, 'String', '');
             set(gui.virusinjection.y_edit, 'String', '');
+            set(gui.virusinjection.z_edit, 'String', '');
             set(gui.virusinjection.date_edit, 'String', '');
             set(gui.virusinjection.volume_edit, 'String', '');
             set(gui.virusinjection.target_edit, 'String', '');
@@ -1741,6 +1769,7 @@ fprintf('Done.\n\n');
             set(gui.virusinjection.name_edit, 'String', data.virusinjection.name(val));
             set(gui.virusinjection.x_edit, 'String', num2str(data.virusinjection.x_coord(val)));
             set(gui.virusinjection.y_edit, 'String', num2str(data.virusinjection.y_coord(val)));
+            set(gui.virusinjection.z_edit, 'String', num2str(data.virusinjection.z_coord(val)));
             set(gui.virusinjection.date_edit, 'String', data.virusinjection.date(val));
             set(gui.virusinjection.volume_edit, 'String', num2str(data.virusinjection.volume(val)));
             set(gui.virusinjection.target_edit, 'String', data.virusinjection.target(val));
@@ -1755,6 +1784,7 @@ fprintf('Done.\n\n');
             set(gui.virusinjection.name_edit, 'String', '');
             set(gui.virusinjection.x_edit, 'String', '');
             set(gui.virusinjection.y_edit, 'String', '');
+            set(gui.virusinjection.z_edit, 'String', '');
             set(gui.virusinjection.date_edit, 'String', '');
             set(gui.virusinjection.volume_edit, 'String', '');
             set(gui.virusinjection.target_edit, 'String', '');
@@ -1764,12 +1794,13 @@ fprintf('Done.\n\n');
             name = get(gui.virusinjection.name_edit, 'String');
             x = str2double(get(gui.virusinjection.x_edit, 'String'));
             y = str2double(get(gui.virusinjection.y_edit, 'String'));
+            z = str2double(get(gui.virusinjection.z_edit, 'String'));
             date = get(gui.virusinjection.date_edit, 'String');
             volume = str2double(get(gui.virusinjection.volume_edit, 'String'));
             target = get(gui.virusinjection.target_edit, 'String');
             insert_stereotactic(data.animal.active, ...
                 'Virus', name, ...
-                'Position', [x, y], ...
+                'Position', [x, y , z], ...
                 'Date', date, ...
                 'Volume', volume, ...
                 'Target', target);
@@ -1779,6 +1810,8 @@ fprintf('Done.\n\n');
             data.virusinjection.x_coord = [data.virusinjection.x_coord; x];
             if isempty(y); y = 0; end
             data.virusinjection.y_coord = [data.virusinjection.y_coord; y];
+            if isempty(z); z = 0; end
+            data.virusinjection.z_coord = [data.virusinjection.z_coord; z];
             if isempty(date); date = {''}; end
             data.virusinjection.date = [data.virusinjection.date; date];
             if isempty(volume); volume = 0; end
@@ -1798,6 +1831,7 @@ fprintf('Done.\n\n');
         set(gui.virusinjection.name_edit, 'Enable', edit_state);
         set(gui.virusinjection.x_edit, 'Enable', edit_state);
         set(gui.virusinjection.y_edit, 'Enable', edit_state);
+        set(gui.virusinjection.z_edit, 'Enable', edit_state);
         set(gui.virusinjection.date_edit, 'Enable', edit_state);
         set(gui.virusinjection.volume_edit, 'Enable', edit_state);
         set(gui.virusinjection.target_edit, 'Enable', edit_state);
@@ -1817,6 +1851,7 @@ fprintf('Done.\n\n');
             data.virusinjection.name(val) = [];
             data.virusinjection.x_coord(val) = [];
             data.virusinjection.y_coord(val) = [];
+            data.virusinjection.z_coord(val) = [];
             data.virusinjection.date(val) = [];
             data.virusinjection.volume(val) = [];
             data.virusinjection.target(val) = [];
@@ -1825,7 +1860,8 @@ fprintf('Done.\n\n');
             if isempty(data.virusinjection.name) % force edit mode
                 set(gui.virusinjection.name_edit, 'Enable', 'on');
                 set(gui.virusinjection.x_edit, 'Enable', 'on');
-                 set(gui.virusinjection.y_edit, 'Enable', 'on');
+                set(gui.virusinjection.y_edit, 'Enable', 'on');
+                set(gui.virusinjection.z_edit, 'Enable', 'on');
                 set(gui.virusinjection.date_edit, 'Enable', 'on');
                 set(gui.virusinjection.volume_edit, 'Enable', 'on');
                 set(gui.virusinjection.target_edit, 'Enable', 'on');
@@ -1849,6 +1885,7 @@ fprintf('Done.\n\n');
             set(gui.virusinjection.name_edit, 'Enable', 'off');
             set(gui.virusinjection.x_edit, 'Enable', 'off');
             set(gui.virusinjection.y_edit, 'Enable', 'off');
+            set(gui.virusinjection.z_edit, 'Enable', 'off');
             set(gui.virusinjection.date_edit, 'Enable', 'off');
             set(gui.virusinjection.volume_edit, 'Enable', 'off');
             set(gui.virusinjection.target_edit, 'Enable', 'off');
@@ -1864,6 +1901,7 @@ fprintf('Done.\n\n');
             set(gui.virusinjection.name_edit, 'String', '');
             set(gui.virusinjection.x_edit, 'String', '');
             set(gui.virusinjection.y_edit, 'String', '');
+            set(gui.virusinjection.z_edit, 'String', '');
             set(gui.virusinjection.date_edit, 'String', '');
             set(gui.virusinjection.volume_edit, 'String', '');
             set(gui.virusinjection.target_edit, 'String', '');
