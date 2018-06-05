@@ -1692,7 +1692,7 @@ fprintf('Done.\n\n');
 % (3.4) StereotacticInjection table callbacks
 
     function virusinjection_update_fcn()
-        [data.virusinjection.name, data.virusinjection.x_coord, data.virusinjection.y_coord, data.virusinjection.date, data.virusinjection.volume, data.virusinjection.target] = ...
+        [data.virusinjection.name, data.virusinjection.x_coord, data.virusinjection.y_coord, data.virusinjection.z_coord, data.virusinjection.date, data.virusinjection.volume, data.virusinjection.target] = ...
             mysql(sprintf('select virus_name, x_coord, y_coord, z_coord, date, volume, target from StereotacticInjection where animal_id = %d;', ...
             data.animal.active));
         if data.animal.active == -1 % no animal selected
@@ -1881,7 +1881,7 @@ fprintf('Done.\n\n');
     end
 
     function virusinjection_cancel_fcn(src, event)
-        if ~isempty(data.virusinjection.id)
+        if ~isempty(data.virusinjection.name)
             set(gui.virusinjection.name_edit, 'Enable', 'off');
             set(gui.virusinjection.x_edit, 'Enable', 'off');
             set(gui.virusinjection.y_edit, 'Enable', 'off');
@@ -1894,7 +1894,7 @@ fprintf('Done.\n\n');
             set(src, 'Enable', 'off');
             set(gui.virusinjection.key_popup, ...
                 'String', keystr_zipper(data.virusinjection.name, 1:length(data.virusinjection.name)));
-            set(gui.project.key_popup, ...
+            set(gui.virusinjection.key_popup, ...
                 'Value', length(data.virusinjection.name));
             virusinjection_select_fcn(src, event);
         else
@@ -1938,12 +1938,12 @@ fprintf('Done.\n\n');
             add_state = 'on';
             key_str = keystr_zipper(data.session.start_date, data.session.id);
             start_date_str = data.session.start_date(1);
-            note_str = num2str(data.session.note(1));
+            note_str = data.session.note(1);
             if strcmpi(data.session.type(1), 'behav')
                 type_val = 2;
             elseif strcmpi(data.session.type(1), 'rec')
                 type_val = 3;
-            elseif strcmpi(gui.session.type(1), 'both')
+            elseif strcmpi(data.session.type(1), 'both')
                 type_val = 4;
             else
                 type_val = 1;
@@ -2088,7 +2088,7 @@ fprintf('Done.\n\n');
             set(src, 'Enable', 'off');
             set(gui.session.key_popup, ...
                 'String', keystr_zipper(data.session.start_date, data.session.id));
-            set(gui.project.key_popup, ...
+            set(gui.session.key_popup, ...
                 'Value', length(data.session.id));
             session_select_fcn(src, event);
         else
@@ -2135,7 +2135,7 @@ fprintf('Done.\n\n');
                 set(gui.quickselect1.project_popup, 'Value', get(gui.project.key_popup, 'Value'));  
                 set(gui.quickselect1.experiment_popup, 'Value', get(gui.experiment.key_popup, 'Value'));
                 set(gui.quickselect1.animal_popup, 'Value', get(gui.animal.key_popup, 'Value'));
-                set(gui.quickselect1.session_popup, 'Value', get(gui.session.key_popup, 'Value')); 
+                set(gui.quickselect1.session_popup, 'Value', get(gui.session.key_popup, 'Value'));
             case 3
             otherwise
         end
