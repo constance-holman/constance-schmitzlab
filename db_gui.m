@@ -99,7 +99,7 @@ fprintf('Done.\n\n');
             'Name', 'SchmitzLab Database', ...
             'NumberTitle', 'off', ...
             'Color', bgColor, ...
-            'Position', [screenSz(1)/4, screenSz(2)+screenSz(2)/5, 1000 750], ...
+            'Position', [screenSz(1)/4, screenSz(2)+screenSz(2)/5, 1000 650], ...
             'ToolBar', 'none', ...
             'Resize', 'off');
         
@@ -108,8 +108,11 @@ fprintf('Done.\n\n');
         gui.menuitem_close = uimenu(gui.menu_file, 'Label', 'Quit', ...
             'Accelerator', 'Q');
         gui.menu_about = uimenu('Label', 'About');
+        
+        % always show first page
+        gui.page = 1;
                 
-        % create first page
+        % draw first page
         [gui.project, data.project] = draw_project(gui.main);
         [gui.experiment, data.experiment] = ...
             draw_experiment(gui.main, data.project.active);
@@ -121,6 +124,12 @@ fprintf('Done.\n\n');
             draw_session(gui.main, data.animal.active, data.experiment.active);
         [gui.next1] = ...
             draw_next1(gui.main, data.session.active);
+        % draw second page
+        [gui.quickselect1] = ...
+            draw_quickselect1(gui.main);
+        [gui.behavior, data.behavior] = ...
+            draw_behavior(gui.main, data.session.active);
+        
     end
     
 % (2.2) draw project table controls
@@ -128,12 +137,17 @@ fprintf('Done.\n\n');
         % get table data
         ui = struct(); % struct with ui handles
         dat = struct(); % struct with table data
-        [dat.id, dat.name] = mysql('select * from Project;');
+        try
+            [dat.id, dat.name] = mysql('select * from Project;');
+        catch err
+            dat.id = {};
+            dat.name = {};
+        end
         if numel(dat.id) == 0 % empty table
             popup_state = 'off';
             edit_state = 'on'; % show editbox, add and cancel btn
             key_str = {''};
-            dat.active = 0;
+            dat.active = -1;
         else % populated table
             popup_state = 'on'; % show key select popup
             edit_state = 'off';
@@ -146,7 +160,7 @@ fprintf('Done.\n\n');
             'BorderType', 'line', ...
             'HighlightColor', [0 0 0], ...
             'Units', 'pixel', ...
-            'Position', [25 625 462.5 100]);
+            'Position', [25 525 462.5 100]);
         ui.title_text = uicontrol('Parent', ui.panel, ...
             'Style', 'text', ...
             'Units', 'pixel', ...
@@ -223,17 +237,23 @@ fprintf('Done.\n\n');
         % get table data
         ui = struct(); % struct with ui handles
         dat = struct(); % struct with table data
-        [dat.id, dat.experimenter, dat.description] = ...
-            mysql(sprintf('select experiment_id, experimenter, description from Experiment where project_id = %d;', ...
-            active));
-        if active == 0 % no project selected
+        try
+            [dat.id, dat.experimenter, dat.description] = ...
+                mysql(sprintf('select experiment_id, experimenter, description from Experiment where project_id = %d;', ...
+                active));
+        catch err
+            dat.id = {};
+            dat.experimenter = {};
+            dat.description = {};
+        end
+        if active == -1 % no project selected
             popup_state = 'off';
             edit_state = 'off'; % show editbox, add and cancel btn
             add_state = 'off';
             key_str = {'No project selected'};
             experimenter_str = '';
             description_str = '';
-            dat.active = 0;
+            dat.active = -1;
         elseif numel(dat.id) == 0 % empty table where project_id
             popup_state = 'off';
             edit_state = 'on'; % show editbox, add and cancel btn
@@ -241,7 +261,7 @@ fprintf('Done.\n\n');
             key_str = {'Create new'};
             experimenter_str = '';
             description_str = '';
-            dat.active = 0;
+            dat.active = -1;
         else % populated table
             popup_state = 'on'; % show key select popup
             edit_state = 'off';
@@ -257,7 +277,7 @@ fprintf('Done.\n\n');
             'BorderType', 'line', ...
             'HighlightColor', [0 0 0], ...
             'Units', 'pixel', ...
-            'Position', [512.5 555 462.5 170]);
+            'Position', [512.5 455 462.5 170]);
         ui.title_text = uicontrol('Parent', ui.panel, ...
             'Style', 'text', ...
             'Units', 'pixel', ...
@@ -360,10 +380,19 @@ fprintf('Done.\n\n');
         % get table data
         ui = struct(); % struct with ui handles
         dat = struct(); % struct with table data
-        [dat.id, dat.genotype, dat.birthdate, dat.sex, dat.name, dat.pyrat_id] = ...
-            mysql(sprintf('select animal_id, genotype, birthdate, sex, name, pyrat_id from Animal where project_id = %d;', ...
-            active));
-        if active == 0 % no project selected
+        try
+            [dat.id, dat.genotype, dat.birthdate, dat.sex, dat.name, dat.pyrat_id] = ...
+                mysql(sprintf('select animal_id, genotype, birthdate, sex, name, pyrat_id from Animal where project_id = %d;', ...
+                active));
+        catch err
+            dat.id = {};
+            dat.genotype = {};
+            dat.birthdate = {};
+            dat.sex = {};
+            dat.name = {};
+            dat.pyrat_id = {};
+        end
+        if active == -1 % no project selected
             popup_state = 'off';
             edit_state = 'off'; % show editbox, add and cancel btn
             add_state = 'off';
@@ -372,7 +401,7 @@ fprintf('Done.\n\n');
             genotype_str = '';
             sex_val = 1;
             birthdate_str = '';
-            dat.active = 0;
+            dat.active = -1;
         elseif numel(dat.id) == 0 % empty table where project_id
             popup_state = 'off';
             edit_state = 'on'; % show editbox, add and cancel btn
@@ -382,7 +411,7 @@ fprintf('Done.\n\n');
             genotype_str = '';
             sex_val = 1;
             birthdate_str = '';
-            dat.active = 0;
+            dat.active = -1;
         else % populated table
             popup_state = 'on'; % show key select popup
             edit_state = 'off';
@@ -404,7 +433,7 @@ fprintf('Done.\n\n');
             'BorderType', 'line', ...
             'HighlightColor', [0 0 0], ...
             'Units', 'pixel', ...
-            'Position', [25 360 462.5 240]);
+            'Position', [25 260 462.5 240]);
         ui.title_text = uicontrol('Parent', ui.panel, ...
             'Style', 'text', ...
             'Units', 'pixel', ...
@@ -538,15 +567,25 @@ fprintf('Done.\n\n');
             'Position', [412.5 165 25 25]);
     end
 
-% (2.5) draw SteoretacticInjection table controls
+% (2.5) draw steoretacticInjection table controls
     function [ui, dat] = draw_virusinjection(main, active)
         % get table data
         ui = struct(); % struct with ui handles
         dat = struct(); % struct with table data
-        [dat.name, dat.x_coord, dat.y_coord, dat.date, dat.volume, dat.target] = ...
-            mysql(sprintf('select virus_name, x_coord, y_coord, date, volume, target from StereotacticInjection where animal_id = %d;', ...
-            active));
-        if active == 0 % no animal selected
+        try
+            [dat.name, dat.x_coord, dat.y_coord, dat.z_coord, dat.date, dat.volume, dat.target] = ...
+                mysql(sprintf('select virus_name, x_coord, y_coord, z_coord, date, volume, target from StereotacticInjection where animal_id = %d;', ...
+                active));
+        catch err
+            dat.name = {};
+            dat.x_coord = [];
+            dat.y_coord = [];
+            dat.z_coord = [];
+            dat.date = {};
+            dat.volume = [];
+            dat.target = {};
+        end
+        if active == -1 % no animal selected
             popup_state = 'off';
             edit_state = 'off'; % show editbox, add and cancel btn
             add_state = 'off';
@@ -554,6 +593,7 @@ fprintf('Done.\n\n');
             name_str = '';
             x_str = '';
             y_str = '';
+            z_str = '';
             date_str = '';
             volume_str = '';
             target_str = '';
@@ -565,6 +605,7 @@ fprintf('Done.\n\n');
             name_str = '';
             x_str = '';
             y_str = '';
+            z_str = '';
             date_str = '';
             volume_str = '';
             target_str = '';
@@ -574,8 +615,9 @@ fprintf('Done.\n\n');
             add_state = 'on';
             key_str = keystr_zipper(dat.name, 1:length(dat.name));
             name_str = dat.name(1);
-            x_str = dat.x_coord;
-            y_str = dat.y_coord;
+            x_str = dat.x_coord(1);
+            y_str = dat.y_coord(1);
+            z_str = dat.z_coord(1);
             date_str = dat.date(1);
             volume_str = dat.volume(1);
             target_str = dat.target(1);
@@ -586,7 +628,7 @@ fprintf('Done.\n\n');
             'BorderType', 'line', ...
             'HighlightColor', [0 0 0], ...
             'Units', 'pixel', ...
-            'Position', [512.5 255 462.5 275]);
+            'Position', [512.5 155 462.5 275]);
         ui.title_text = uicontrol('Parent', ui.panel, ...
             'Style', 'text', ...
             'Units', 'pixel', ...
@@ -658,7 +700,7 @@ fprintf('Done.\n\n');
             'String', x_str, ...
             'HorizontalAlignment', 'center', ...
             'Visible', 'on', ...
-            'Position', [120 125 70 25]);
+            'Position', [115 125 50 25]);
         ui.y_text = uicontrol('Parent', ui.panel, ...
             'Style', 'text', ...
             'Units', 'pixel', ...
@@ -667,16 +709,34 @@ fprintf('Done.\n\n');
             'Enable', 'on', ...
             'HorizontalAlignment', 'left', ...
             'Visible', 'on', ...
-            'Position', [215 120 20 26]);
+            'Position', [170 120 20 26]);
         ui.y_edit = uicontrol('Parent', ui.panel, ...
             'Style', 'edit', ...
             'Units', 'pixel', ...
             'Enable', edit_state, ...
             'Visible', 'on', ...
-            'Position', [252.5 125 70 25], ...
+            'Position', [195 125 50 25], ...
             'FontSize', 10, ...
             'HorizontalAlignment', 'center', ...
             'String', y_str);
+        ui.z_text = uicontrol('Parent', ui.panel, ...
+            'Style', 'text', ...
+            'Units', 'pixel', ...
+            'FontSize', 10, ...
+            'String', 'Z:', ...
+            'Enable', 'on', ...
+            'HorizontalAlignment', 'left', ...
+            'Visible', 'on', ...
+            'Position', [247 120 20 26]);
+        ui.z_edit = uicontrol('Parent', ui.panel, ...
+            'Style', 'edit', ...
+            'Units', 'pixel', ...
+            'Enable', edit_state, ...
+            'Visible', 'on', ...
+            'Position', [272.5 125 50 25], ...
+            'FontSize', 10, ...
+            'HorizontalAlignment', 'center', ...
+            'String', z_str);
         ui.date_text = uicontrol('Parent', ui.panel, ...
             'Style', 'text', ...
             'Units', 'pixel', ...
@@ -756,10 +816,17 @@ fprintf('Done.\n\n');
         % get table data
         ui = struct(); % struct with ui handles
         dat = struct(); % struct with table data
-        [dat.id, dat.start_date, dat.note, dat.type] = ...
-            mysql(sprintf('select session_id, start_date, note, session_type from Session where animal_id = %d and experiment_id = %d;', ...
-            animal, experiment));
-        if animal == 0 || experiment == 0
+        try
+            [dat.id, dat.start_date, dat.note, dat.type] = ...
+                mysql(sprintf('select session_id, start_date, note, session_type from Session where animal_id = %d and experiment_id = %d;', ...
+                animal, experiment));
+        catch err
+            dat.id = [];
+            dat.start_date = {};
+            dat.note = {};
+            dat.type = {};
+        end
+        if animal == -1 || experiment == -1
             popup_state = 'off';
             edit_state = 'off'; % show editbox, add and cancel btn
             add_state = 'off';
@@ -767,7 +834,7 @@ fprintf('Done.\n\n');
             start_date_str = '';
             note_str = '';
             type_val = 1;
-            dat.active = 0;
+            dat.active = -1;
         elseif numel(dat.id) == 0 % empty table where animal_id, experiment_id
             popup_state = 'off';
             edit_state = 'on'; % show editbox, add and cancel btn
@@ -776,7 +843,7 @@ fprintf('Done.\n\n');
             start_date_str = '';
             note_str = '';
             type_val = 1;
-            dat.active = 0;
+            dat.active = -1;
         else % populated table
             popup_state = 'on'; % show key select popup
             edit_state = 'off';
@@ -800,7 +867,7 @@ fprintf('Done.\n\n');
             'BorderType', 'line', ...
             'HighlightColor', [0 0 0], ...
             'Units', 'pixel', ...
-            'Position', [25 125 462.5 210]);
+            'Position', [25 25 462.5 210]);
         ui.title_text = uicontrol('Parent', ui.panel, ...
             'Style', 'text', ...
             'Units', 'pixel', ...
@@ -919,30 +986,297 @@ fprintf('Done.\n\n');
     end
 
 % (2.5) draw next button panel
-    function [ui] = draw_next1(main, active)
+    function [ui] = draw_next1(main, session)
+        if session < 0 % no session selected
+            state = 'off';
+        else
+            state = 'on';
+        end
         % draw ui controls
         ui.panel = uipanel('Parent', main, ...
             'BorderType', 'line', ...
             'HighlightColor', [0 0 0], ...
             'Units', 'pixel', ...
-            'Position', [512.5 125 462.5 50]);
+            'Position', [512.5 25 462.5 105]);
         ui.continue_btn = uicontrol('Parent', ui.panel, ... 
+            'Style', 'pushbutton', ...
+            'Units', 'pixel', ...
+            'Enable', state, ...
+            'Visible', 'on', ...
+            'String', 'Continue', ...
+            'Callback', @turn_page_fcn, ...
+            'Position', [65 30 120 40]);
+        ui.continue_text = uicontrol('Parent', ui.panel, ...
+            'Style', 'text', ...
+            'Units', 'pixel', ...
+            'FontSize', 10, ...
+            'String', sprintf('+   Add / Insert new\n-   Remove selected\nx   Cancel'), ...
+            'Enable', 'off', ...
+            'HorizontalAlignment', 'left', ...
+            'Visible', 'on', ...
+            'Position', [260 22.5 200 60]);
+    end
+
+% (2.6) draw key quick select controls
+
+    function [ui] = draw_quickselect1(main)
+        % get table data
+        ui = struct(); % struct with ui handles
+        project_key_str = {''};
+        experiment_key_str = {''};
+        animal_key_str = {''};
+        session_key_str = {''};
+        % draw ui controls
+        ui.panel = uipanel('Parent', main, ...
+            'BorderType', 'line', ...
+            'HighlightColor', [0 0 0], ...
+            'Units', 'pixel', ...
+            'Position', [25 397.5 205 227.5], ...
+            'Visible', 'off');
+        ui.title_text = uicontrol('Parent', ui.panel, ...
+            'Style', 'text', ...
+            'Units', 'pixel', ...
+            'FontSize', 12, ...
+            'FontWeight', 'bold', ...
+            'String', 'Active', ...
+            'Enable', 'on', ...
+            'HorizontalAlignment', 'center', ...
+            'Visible', 'on', ...
+            'Position', [57.5 193.5 88 26]);
+        ui.project_text = uicontrol('Parent', ui.panel, ...
+            'Style', 'text', ...
+            'Units', 'pixel', ...
+            'FontSize', 10, ...
+            'String', 'Project:', ...
+            'Enable', 'on', ...
+            'HorizontalAlignment', 'left', ...
+            'Visible', 'on', ...
+            'Position', [15 172.5 66 26]);
+        ui.project_popup = uicontrol('Parent', ui.panel, ...
+            'Style', 'popupmenu', ...
+            'Units', 'pixel', ...
+            'Enable', 'on', ...
+            'Visible', 'on', ...
+            'Position', [15 175 170 4], ...
+            'FontSize', 10, ...
+            'String', project_key_str, ...
+            'Value', 1, ...
+            'TooltipString', 'Select a project', ...
+            'Callback', @project_select_fcn);
+        ui.experiment_text = uicontrol('Parent', ui.panel, ...
+            'Style', 'text', ...
+            'Units', 'pixel', ...
+            'FontSize', 10, ...
+            'String', 'Experiment:', ...
+            'Enable', 'on', ...
+            'HorizontalAlignment', 'left', ...
+            'Visible', 'on', ...
+            'Position', [15 125 90 26]);
+        ui.experiment_popup = uicontrol('Parent', ui.panel, ...
+            'Style', 'popupmenu', ...
+            'Units', 'pixel', ...
+            'Enable', 'on', ...
+            'Visible', 'on', ...
+            'Position', [15 127.5 170 4], ...
+            'FontSize', 10, ...
+            'String', experiment_key_str, ...
+            'Value', 1, ...
+            'TooltipString', 'Select an experiment', ...
+            'Callback', @experiment_select_fcn);
+        ui.animal_text = uicontrol('Parent', ui.panel, ...
+            'Style', 'text', ...
+            'Units', 'pixel', ...
+            'FontSize', 10, ...
+            'String', 'Animal:', ...
+            'Enable', 'on', ...
+            'HorizontalAlignment', 'left', ...
+            'Visible', 'on', ...
+            'Position', [15 77.5 66 26]);
+        ui.animal_popup = uicontrol('Parent', ui.panel, ...
+            'Style', 'popupmenu', ...
+            'Units', 'pixel', ...
+            'Enable', 'on', ...
+            'Visible', 'on', ...
+            'Position', [15 80 170 4], ...
+            'FontSize', 10, ...
+            'String', animal_key_str, ...
+            'Value', 1, ...
+            'TooltipString', 'Select an animal', ...
+            'Callback', @animal_select_fcn);
+        ui.session_text = uicontrol('Parent', ui.panel, ...
+            'Style', 'text', ...
+            'Units', 'pixel', ...
+            'FontSize', 10, ...
+            'String', 'Session:', ...
+            'Enable', 'on', ...
+            'HorizontalAlignment', 'left', ...
+            'Visible', 'on', ...
+            'Position', [15 30 66 26]);
+        ui.session_popup = uicontrol('Parent', ui.panel, ...
+            'Style', 'popupmenu', ...
+            'Units', 'pixel', ...
+            'Enable', 'on', ...
+            'Visible', 'on', ...
+            'Position', [15 32.5 170 4], ...
+            'FontSize', 10, ...
+            'String', session_key_str, ...
+            'Value', 1, ...
+            'TooltipString', 'Select a session', ...
+            'Callback', @session_select_fcn);
+    end
+
+% (2.7) draw behavior table controls
+
+    function [ui, dat] = draw_behavior(main, session)
+        % get table data
+        ui = struct(); % struct with ui handles
+        dat = struct(); % struct with table data
+        try
+            [dat.real_x, dat.real_y, dat.virt_x, dat.virt_y, dat.time, dat.virt_end, dat.pulse] = ...
+                mysql(sprintf('select real_x, real_y, virt_x, virt_y, time, virt_end, pulse from Behavior where session_id = %d;', session));
+        catch err
+            dat.real_x = [];
+            dat.real_y = [];
+            dat.virt_x = [];
+            dat.virt_y = [];
+            dat.time = [];
+            dat.virt_end = [];
+            dat.pulse = [];
+        end
+        if numel(dat.time) == 0 % empty table
+            popup_state = 'off';
+            edit_state = 'on'; % show editbox, add and cancel btn
+        else % populated table
+            popup_state = 'on'; % show key select popup
+            edit_state = 'off';
+        end
+        
+        % draw ui controls
+        ui.panel = uipanel('Parent', main, ...
+            'BorderType', 'line', ...
+            'HighlightColor', [0 0 0], ...
+            'Units', 'pixel', ...
+            'Position', [255 455 719 170], ...
+            'Visible', 'off');
+        ui.title_text = uicontrol('Parent', ui.panel, ...
+            'Style', 'text', ...
+            'Units', 'pixel', ...
+            'FontSize', 12, ...
+            'FontWeight', 'bold', ...
+            'String', 'Behavior', ...
+            'Enable', 'on', ...
+            'HorizontalAlignment', 'center', ...
+            'Visible', 'on', ...
+            'Position', [290.5 130 95 26]);
+        ui.subtitle_text = uicontrol('Parent', ui.panel, ...
+            'Style', 'text', ...
+            'Units', 'pixel', ...
+            'FontSize', 8, ...
+            'String', sprintf('( Rows: %d )', numel(dat.time)), ...
+            'Enable', 'on', ...
+            'HorizontalAlignment', 'center', ...
+            'Visible', 'on', ...
+            'Position', [620 125 70 26]);
+        ui.table = uitable('Parent', ui.panel, ...
+        'ColumnName', {'RealX', 'RealY', 'VirtX', 'VirtY', 'Time', 'End', 'Pulse'}, ...
+        'ColumnFormat', {'numeric', 'numeric', 'numeric', 'numeric', 'numeric', 'numeric', 'numeric'}, ...
+        'ColumnWidth', {40, 40, 40, 40, 60, 40, 40}, ...
+        'ColumnEditable', [false, false, false, false, false, false, false], ...
+        'Data', [dat.real_x, dat.real_y, ...
+                dat.virt_x, dat.virt_y, ...
+                dat.time, strcmpi(dat.virt_end, '1'), strcmpi(dat.pulse, '1')], ...
+        'Units', 'pixel', ...
+        'Position', [20 15 303 105], ...
+        'RowName', [], ...
+        'FontSize', 10);
+        ui.position_text = uicontrol('Parent', ui.panel, ...
+            'Style', 'text', ...
+            'Units', 'pixel', ...
+            'FontSize', 10, ...
+            'String', 'Position:', ...
+            'Enable', 'on', ...
+            'HorizontalAlignment', 'center', ...
+            'Visible', 'on', ...
+            'Position', [382.5 95 220 26]);
+        ui.position_edit = uicontrol('Parent', ui.panel, ...
+            'Style', 'edit', ...
+            'Units', 'pixel', ...
+            'Enable', 'on', ...
+            'Visible', edit_state, ...
+            'Position', [385 75 220 25]);
+        ui.position_btn = uicontrol('Parent', ui.panel, ... 
+            'Style', 'pushbutton', ...
+            'Units', 'pixel', ...
+            'Enable', 'on', ...
+            'Visible', 'on', ...
+            'String', 'Select', ...
+            'Callback', @behavior_select_fcn, ...
+            'Tag', 'position', ...
+            'Position', [625 75 75 25]);
+        ui.pulse_text = uicontrol('Parent', ui.panel, ...
+            'Style', 'text', ...
+            'Units', 'pixel', ...
+            'FontSize', 10, ...
+            'String', 'Pulse:', ...
+            'Enable', 'on', ...
+            'HorizontalAlignment', 'center', ...
+            'Visible', 'on', ...
+            'Position', [382.5 40 220 26]);
+        ui.pulse_edit = uicontrol('Parent', ui.panel, ...
+            'Style', 'edit', ...
+            'Units', 'pixel', ...
+            'Enable', 'off', ...
+            'Visible', edit_state, ...
+            'Position', [385 20 220 25]);
+        ui.pulse_btn = uicontrol('Parent', ui.panel, ... 
+            'Style', 'pushbutton', ...
+            'Units', 'pixel', ...
+            'Enable', 'off', ...
+            'Visible', 'on', ...
+            'String', 'Select', ...
+            'Callback', @behavior_select_fcn, ...
+            'Tag', 'pulse', ...
+            'Position', [625 20 75 25]);
+        ui.key_add_btn = uicontrol('Parent', ui.panel, ... 
+            'Style', 'pushbutton', ...
+            'Units', 'pixel', ...
+            'Enable', popup_state, ...
+            'Visible', 'on', ...
+            'String', '+', ...
+            'Callback', @behavior_add_fcn, ...
+            'Position', [340 85 25 25]);
+        ui.key_rem_btn = uicontrol('Parent', ui.panel, ... 
+            'Style', 'pushbutton', ...
+            'Units', 'pixel', ...
+            'Enable', popup_state, ...
+            'Visible', 'on', ...
+            'String', '-', ...
+            'Callback', @behavior_rem_fcn, ...
+            'Position', [340 55 25 25]);
+        ui.key_cancel_btn = uicontrol('Parent', ui.panel, ... 
             'Style', 'pushbutton', ...
             'Units', 'pixel', ...
             'Enable', edit_state, ...
             'Visible', 'on', ...
             'String', 'x', ...
-            'Callback', @continue_fcn, ...
-            'Position', [412.5 200 25 25]);
+            'Callback', @behavior_cancel_fcn, ...
+            'Position', [340 25 25 25]);
     end
+
+% (2.8) draw reward table controls
+
+% (2.9) draw reward_type table controls
+
+% (2.10) draw recording table controls
+
         
 %% (3) ui callback functions
 % (3.1) project table callbacks  
     function project_select_fcn(src, event)
         if isempty(data.project.id)
-            data.project.active = 0;
+            data.project.active = -1;
         else
-            data.project.active = data.project.id(get(gui.project.key_popup, 'Value'));
+            data.project.active = data.project.id(get(src, 'Value'));
         end
         % update depending tables
         experiment_update_fcn();
@@ -1017,14 +1351,14 @@ fprintf('Done.\n\n');
         [data.experiment.id, data.experiment.experimenter, data.experiment.description] = ...
             mysql(sprintf('select experiment_id, experimenter, description from Experiment where project_id = %d;', ...
             data.project.active));
-        if data.project.active == 0 % no project selected
+        if data.project.active == -1 % no project selected
             popup_state = 'off';
             edit_state = 'off'; % show editbox, add and cancel btn
             add_state = 'off';
             key_str = {'No project selected'};
             experimenter_str = '';
             description_str = '';
-            data.experiment.active = 0;
+            data.experiment.active = -1;
         elseif numel(data.experiment.id) == 0 % empty table where project_id
             popup_state = 'off';
             edit_state = 'on'; % show editbox, add and cancel btn
@@ -1032,7 +1366,7 @@ fprintf('Done.\n\n');
             key_str = {'Create new'};
             experimenter_str = '';
             description_str = '';
-            data.experiment.active = 0;
+            data.experiment.active = -1;
         else % populated table
             popup_state = 'on'; % show key select popup
             edit_state = 'off';
@@ -1053,20 +1387,23 @@ fprintf('Done.\n\n');
         set(gui.experiment.key_add_btn, 'Enable', add_state);
         set(gui.experiment.key_rem_btn, 'Enable', popup_state);
         set(gui.experiment.key_cancel_btn, 'Enable', edit_state);
+        
+        % update depending tables
+        session_update_fcn();
     end
 
     function experiment_select_fcn(src, event)
         if isempty(data.experiment.id)
-            data.experiment.active = 0;
+            data.experiment.active = -1;
             set(gui.experiment.experimenter_edit, 'String', '');
             set(gui.experiment.description_edit, 'String', '');
         else
-            val = get(gui.experiment.key_popup, 'Value');
+            val = get(src, 'Value');
             data.experiment.active = data.experiment.id(val);
             set(gui.experiment.experimenter_edit, 'String', data.experiment.experimenter(val));
             set(gui.experiment.description_edit, 'String', data.experiment.description(val));
         end
-        % TODO: update depending tables
+        % update depending tables
         session_update_fcn();
     end
 
@@ -1165,7 +1502,7 @@ fprintf('Done.\n\n');
         [data.animal.id, data.animal.genotype, data.animal.birthdate, data.animal.sex, data.animal.name, data.animal.pyrat_id] = ...
             mysql(sprintf('select animal_id, genotype, birthdate, sex, name, pyrat_id from Animal where project_id = %d;', ...
             data.project.active));
-        if data.project.active == 0 % no project selected
+        if data.project.active == -1 % no project selected
             popup_state = 'off';
             edit_state = 'off'; % show editbox, add and cancel btn
             add_state = 'off';
@@ -1174,7 +1511,7 @@ fprintf('Done.\n\n');
             genotype_str = '';
             sex_val = 1;
             birthdate_str = '';
-            data.animal.active = 0;
+            data.animal.active = -1;
         elseif numel(data.experiment.id) == 0 % empty table where project_id
             popup_state = 'off';
             edit_state = 'on'; % show editbox, add and cancel btn
@@ -1184,7 +1521,7 @@ fprintf('Done.\n\n');
             genotype_str = '';
             sex_val = 1;
             birthdate_str = '';
-            data.animal.active = 0;
+            data.animal.active = -1;
         else % populated table
             popup_state = 'on'; % show key select popup
             edit_state = 'off';
@@ -1215,17 +1552,21 @@ fprintf('Done.\n\n');
         set(gui.animal.key_add_btn, 'Enable', add_state);
         set(gui.animal.key_rem_btn, 'Enable', popup_state);
         set(gui.animal.key_cancel_btn, 'Enable', edit_state);
+        
+        % update depending tables
+        virusinjection_update_fcn();
+        session_update_fcn();
     end
 
     function animal_select_fcn(src, event)
         if isempty(data.animal.id)
-            data.animal.active = 0;
+            data.animal.active = -1;
             set(gui.animal.name_edit, 'String', '');
             set(gui.animal.genotype_edit, 'String', '');
             set(gui.animal.sex_popup, 'Value', 1);
             set(gui.animal.birthdate_edit, 'String', '');
         else
-            val = get(gui.animal.key_popup, 'Value');
+            val = get(src, 'Value');
             data.animal.active = data.animal.id(val);
             set(gui.animal.name_edit, 'String', data.animal.name(val));
             set(gui.animal.genotype_edit, 'String', data.animal.genotype(val));
@@ -1237,7 +1578,7 @@ fprintf('Done.\n\n');
             set(gui.animal.sex_popup, 'Value', sex_val);
             set(gui.animal.birthdate_edit, 'String', data.animal.birthdate(val));
         end
-        % TODO: update depending tables
+        % update depending tables
         virusinjection_update_fcn();
         session_update_fcn();
     end
@@ -1352,9 +1693,9 @@ fprintf('Done.\n\n');
 
     function virusinjection_update_fcn()
         [data.virusinjection.name, data.virusinjection.x_coord, data.virusinjection.y_coord, data.virusinjection.date, data.virusinjection.volume, data.virusinjection.target] = ...
-            mysql(sprintf('select virus_name, x_coord, y_coord, date, volume, target from StereotacticInjection where animal_id = %d;', ...
+            mysql(sprintf('select virus_name, x_coord, y_coord, z_coord, date, volume, target from StereotacticInjection where animal_id = %d;', ...
             data.animal.active));
-        if data.animal.active == 0 % no animal selected
+        if data.animal.active == -1 % no animal selected
             popup_state = 'off';
             edit_state = 'off'; % show editbox, add and cancel btn
             add_state = 'off';
@@ -1362,6 +1703,7 @@ fprintf('Done.\n\n');
             name_str = '';
             x_str = '';
             y_str = '';
+            z_str = '';
             date_str = '';
             volume_str = '';
             target_str = '';
@@ -1373,6 +1715,7 @@ fprintf('Done.\n\n');
             name_str = '';
             x_str = '';
             y_str = '';
+            z_str = '';
             date_str = '';
             volume_str = '';
             target_str = '';
@@ -1384,6 +1727,7 @@ fprintf('Done.\n\n');
             name_str = data.virusinjection.name(1);
             x_str = num2str(data.virusinjection.x_coord(1));
             y_str = num2str(data.virusinjection.y_coord(1));
+            z_str = num2str(data.virusinjection.z_coord(1));
             date_str = data.virusinjection.date(1);
             volume_str = num2str(data.virusinjection.volume(1));
             target_str = data.virusinjection.target(1);
@@ -1398,6 +1742,8 @@ fprintf('Done.\n\n');
         set(gui.virusinjection.x_edit, 'String', x_str);
         set(gui.virusinjection.y_edit, 'Enable', edit_state);
         set(gui.virusinjection.y_edit, 'String', y_str);
+        set(gui.virusinjection.z_edit, 'Enable', edit_state);
+        set(gui.virusinjection.z_edit, 'String', z_str);
         set(gui.virusinjection.date_edit, 'Enable', edit_state);
         set(gui.virusinjection.date_edit, 'String', date_str);
         set(gui.virusinjection.volume_edit, 'Enable', edit_state);
@@ -1414,6 +1760,7 @@ fprintf('Done.\n\n');
             set(gui.virusinjection.name_edit, 'String', '');
             set(gui.virusinjection.x_edit, 'String', '');
             set(gui.virusinjection.y_edit, 'String', '');
+            set(gui.virusinjection.z_edit, 'String', '');
             set(gui.virusinjection.date_edit, 'String', '');
             set(gui.virusinjection.volume_edit, 'String', '');
             set(gui.virusinjection.target_edit, 'String', '');
@@ -1422,6 +1769,7 @@ fprintf('Done.\n\n');
             set(gui.virusinjection.name_edit, 'String', data.virusinjection.name(val));
             set(gui.virusinjection.x_edit, 'String', num2str(data.virusinjection.x_coord(val)));
             set(gui.virusinjection.y_edit, 'String', num2str(data.virusinjection.y_coord(val)));
+            set(gui.virusinjection.z_edit, 'String', num2str(data.virusinjection.z_coord(val)));
             set(gui.virusinjection.date_edit, 'String', data.virusinjection.date(val));
             set(gui.virusinjection.volume_edit, 'String', num2str(data.virusinjection.volume(val)));
             set(gui.virusinjection.target_edit, 'String', data.virusinjection.target(val));
@@ -1436,6 +1784,7 @@ fprintf('Done.\n\n');
             set(gui.virusinjection.name_edit, 'String', '');
             set(gui.virusinjection.x_edit, 'String', '');
             set(gui.virusinjection.y_edit, 'String', '');
+            set(gui.virusinjection.z_edit, 'String', '');
             set(gui.virusinjection.date_edit, 'String', '');
             set(gui.virusinjection.volume_edit, 'String', '');
             set(gui.virusinjection.target_edit, 'String', '');
@@ -1445,12 +1794,13 @@ fprintf('Done.\n\n');
             name = get(gui.virusinjection.name_edit, 'String');
             x = str2double(get(gui.virusinjection.x_edit, 'String'));
             y = str2double(get(gui.virusinjection.y_edit, 'String'));
+            z = str2double(get(gui.virusinjection.z_edit, 'String'));
             date = get(gui.virusinjection.date_edit, 'String');
             volume = str2double(get(gui.virusinjection.volume_edit, 'String'));
             target = get(gui.virusinjection.target_edit, 'String');
             insert_stereotactic(data.animal.active, ...
                 'Virus', name, ...
-                'Position', [x, y], ...
+                'Position', [x, y , z], ...
                 'Date', date, ...
                 'Volume', volume, ...
                 'Target', target);
@@ -1460,6 +1810,8 @@ fprintf('Done.\n\n');
             data.virusinjection.x_coord = [data.virusinjection.x_coord; x];
             if isempty(y); y = 0; end
             data.virusinjection.y_coord = [data.virusinjection.y_coord; y];
+            if isempty(z); z = 0; end
+            data.virusinjection.z_coord = [data.virusinjection.z_coord; z];
             if isempty(date); date = {''}; end
             data.virusinjection.date = [data.virusinjection.date; date];
             if isempty(volume); volume = 0; end
@@ -1479,6 +1831,7 @@ fprintf('Done.\n\n');
         set(gui.virusinjection.name_edit, 'Enable', edit_state);
         set(gui.virusinjection.x_edit, 'Enable', edit_state);
         set(gui.virusinjection.y_edit, 'Enable', edit_state);
+        set(gui.virusinjection.z_edit, 'Enable', edit_state);
         set(gui.virusinjection.date_edit, 'Enable', edit_state);
         set(gui.virusinjection.volume_edit, 'Enable', edit_state);
         set(gui.virusinjection.target_edit, 'Enable', edit_state);
@@ -1498,6 +1851,7 @@ fprintf('Done.\n\n');
             data.virusinjection.name(val) = [];
             data.virusinjection.x_coord(val) = [];
             data.virusinjection.y_coord(val) = [];
+            data.virusinjection.z_coord(val) = [];
             data.virusinjection.date(val) = [];
             data.virusinjection.volume(val) = [];
             data.virusinjection.target(val) = [];
@@ -1506,7 +1860,8 @@ fprintf('Done.\n\n');
             if isempty(data.virusinjection.name) % force edit mode
                 set(gui.virusinjection.name_edit, 'Enable', 'on');
                 set(gui.virusinjection.x_edit, 'Enable', 'on');
-                 set(gui.virusinjection.y_edit, 'Enable', 'on');
+                set(gui.virusinjection.y_edit, 'Enable', 'on');
+                set(gui.virusinjection.z_edit, 'Enable', 'on');
                 set(gui.virusinjection.date_edit, 'Enable', 'on');
                 set(gui.virusinjection.volume_edit, 'Enable', 'on');
                 set(gui.virusinjection.target_edit, 'Enable', 'on');
@@ -1530,6 +1885,7 @@ fprintf('Done.\n\n');
             set(gui.virusinjection.name_edit, 'Enable', 'off');
             set(gui.virusinjection.x_edit, 'Enable', 'off');
             set(gui.virusinjection.y_edit, 'Enable', 'off');
+            set(gui.virusinjection.z_edit, 'Enable', 'off');
             set(gui.virusinjection.date_edit, 'Enable', 'off');
             set(gui.virusinjection.volume_edit, 'Enable', 'off');
             set(gui.virusinjection.target_edit, 'Enable', 'off');
@@ -1545,6 +1901,7 @@ fprintf('Done.\n\n');
             set(gui.virusinjection.name_edit, 'String', '');
             set(gui.virusinjection.x_edit, 'String', '');
             set(gui.virusinjection.y_edit, 'String', '');
+            set(gui.virusinjection.z_edit, 'String', '');
             set(gui.virusinjection.date_edit, 'String', '');
             set(gui.virusinjection.volume_edit, 'String', '');
             set(gui.virusinjection.target_edit, 'String', '');
@@ -1557,7 +1914,7 @@ fprintf('Done.\n\n');
         [data.session.id, data.session.start_date, data.session.note, data.session.type] = ...
             mysql(sprintf('select session_id, start_date, note, session_type from Session where animal_id = %d and experiment_id = %d;', ...
             data.animal.active, data.experiment.active));
-        if data.animal.active == 0 || data.experiment.active == 0
+        if data.animal.active == -1 || data.experiment.active == -1
             popup_state = 'off';
             edit_state = 'off'; % show editbox, add and cancel btn
             add_state = 'off';
@@ -1565,7 +1922,7 @@ fprintf('Done.\n\n');
             start_date_str = '';
             note_str = '';
             type_val = 1;
-            data.session.active = 0;
+            data.session.active = -1;
         elseif numel(data.session.id) == 0 % empty table where project_id
             popup_state = 'off';
             edit_state = 'on'; % show editbox, add and cancel btn
@@ -1574,7 +1931,7 @@ fprintf('Done.\n\n');
             start_date_str = '';
             note_str = '';
             type_val = 1;
-            data.session.active = 0;
+            data.session.active = -1;
         else % populated table
             popup_state = 'on'; % show key select popup
             edit_state = 'off';
@@ -1606,6 +1963,9 @@ fprintf('Done.\n\n');
         set(gui.session.key_add_btn, 'Enable', add_state);
         set(gui.session.key_rem_btn, 'Enable', popup_state);
         set(gui.session.key_cancel_btn, 'Enable', edit_state);
+        
+        % update depending tables
+        behavior_update_fcn();
     end
 
     function session_select_fcn(src, event)
@@ -1613,9 +1973,10 @@ fprintf('Done.\n\n');
             set(gui.session.start_date_edit, 'String', '');
             set(gui.session.note_edit, 'String', '');
             set(gui.session.type_popup, 'Value', 1);
-            data.session.active = 0;
+            set(gui.next1.continue_btn, 'Enable', 'off');
+            data.session.active = -1;
         else
-            val = get(gui.session.key_popup, 'Value');
+            val = get(src, 'Value');
             set(gui.session.start_date_edit, 'String', data.session.start_date(val));
             set(gui.session.note_edit, 'String', data.session.note(val));
             if strcmpi(data.session.type(val), 'behav')
@@ -1629,8 +1990,11 @@ fprintf('Done.\n\n');
             end
             set(gui.session.type_popup, 'Value', type_val);
             data.session.active = data.session.id(val);
+            set(gui.next1.continue_btn, 'Enable', 'on');
         end
-        % TODO: update depending tables
+        
+        % update depending tables
+        behavior_update_fcn();
     end
 
     function session_add_fcn(src, event)
@@ -1733,7 +2097,181 @@ fprintf('Done.\n\n');
             set(gui.session.type_popup, 'Value', 1);
         end
     end
+
+% (3.6) Continue / Back to page callbacks
+
+    function turn_page_fcn(src, evt)
+        if strcmp(get(src, 'String'), 'Continue')
+            gui.page = gui.page + 1;
+        elseif strcmp(get(src, 'String'), 'Back')
+            gui.page = gui.page - 1;
+        end
+        
+        switch gui.page
+            case 1
+                set_visible(gui.project, 'on');
+                set_visible(gui.experiment, 'on');
+                set_visible(gui.animal, 'on');
+                set_visible(gui.virusinjection, 'on');
+                set_visible(gui.session, 'on');
+                set_visible(gui.next1, 'on');
+                set_visible(gui.quickselect1, 'off');
+                set_visible(gui.behavior, 'off');
+            case 2
+                set_visible(gui.project, 'off');
+                set_visible(gui.experiment, 'off');
+                set_visible(gui.animal, 'off');
+                set_visible(gui.virusinjection, 'off');
+                set_visible(gui.session, 'off');
+                set_visible(gui.next1, 'off');
+                set_visible(gui.quickselect1, 'on');
+                set_visible(gui.behavior, 'on');
+                
+                % update quickselect popup strings
+                set(gui.quickselect1.project_popup, 'String', get(gui.project.key_popup, 'String'));  
+                set(gui.quickselect1.experiment_popup, 'String', get(gui.experiment.key_popup, 'String'));
+                set(gui.quickselect1.animal_popup, 'String', get(gui.animal.key_popup, 'String'));
+                set(gui.quickselect1.session_popup, 'String', get(gui.session.key_popup, 'String'));
+                set(gui.quickselect1.project_popup, 'Value', get(gui.project.key_popup, 'Value'));  
+                set(gui.quickselect1.experiment_popup, 'Value', get(gui.experiment.key_popup, 'Value'));
+                set(gui.quickselect1.animal_popup, 'Value', get(gui.animal.key_popup, 'Value'));
+                set(gui.quickselect1.session_popup, 'Value', get(gui.session.key_popup, 'Value')); 
+            case 3
+            otherwise
+        end
+    end
+
+% (3.7) Behavior table callbacks
+
+
+    function behavior_update_fcn()
+        [   data.behavior.real_x, data.behavior.real_y, ...
+            data.behavior.virt_x, data.behavior.virt_y, ...
+            data.behavior.time, data.behavior.virt_end, data.behavior.pulse] = ...
+                mysql(sprintf('select real_x, real_y, virt_x, virt_y, time, virt_end, pulse from Behavior where session_id = %d;', ...
+                data.session.active));
+        if data.session.active == -1
+            edit_state = 'off'; % show editbox, add and cancel btn
+            rem_state = 'off';
+        elseif numel(data.behavior.time) == 0 % empty table where session_id
+            edit_state = 'on'; % show editbox, add and cancel btn
+            rem_state = 'off';
+        else % populated table
+            edit_state = 'on';
+            rem_state = 'on';
+        end
+        
+        data.behavior.virt_end = strcmpi(data.behavior.virt_end, '1');
+        data.behavior.pulse = strcmpi(data.behavior.pulse, '1');
+        
+        set(gui.behavior.table, 'Data', ...
+            [data.behavior.real_x, data.behavior.real_y, ...
+             data.behavior.virt_x, data.behavior.virt_y, ...
+             data.behavior.time, data.behavior.virt_end, ...
+            data.behavior.pulse]);
+        
+        set(gui.behavior.position_edit, 'Enable', edit_state);
+        set(gui.behavior.position_btn, 'Enable', edit_state);
+        set(gui.behavior.pulse_edit, 'Enable', 'off');
+        set(gui.behavior.pulse_btn, 'Enable', 'off'),
+        set(gui.behavior.table, 'Enable', edit_state);
+        set(gui.behavior.key_rem_btn, 'Enable', rem_state);
+        set(gui.behavior.key_cancel_btn, 'Enable', edit_state);
+    end
+
+    function behavior_select_fcn(src, event)
+        switch get(src, 'Tag')
+            case 'position'
+                [fname, fpath] = uigetfile('*', 'Pick a position file.');
+                if isnumeric(fname) % selection canceled
+                    set(gui.behavior.pulse_edit, 'Enable', 'off');
+                    set(gui.behavior.pulse_btn, 'Enable', 'off');
+                    set(gui.behavior.key_add_btn, 'Enable', 'off');
+                    return
+                end
+                posf = fullfile(fpath, fname);
+                if exist(posf, 'file') ~= 2; error('Unable to locate %s', fname); end
+                set(gui.behavior.position_edit, 'String', posf);
+                set(gui.behavior.pulse_edit, 'Enable', 'on');
+                set(gui.behavior.pulse_btn, 'Enable', 'on');
+            case 'pulse'
+                posf = get(gui.behavior.position_edit, 'String');
+                [fname, fpath] = uigetfile('*', 'Pick a pulse file.');
+                if isempty(posf)
+                    set(gui.behavior.pulse_edit, 'Enable', 'off');
+                    set(gui.behavior.pulse_btn, 'Enable', 'off');
+                    set(gui.behavior.key_add_btn, 'Enable', 'off');
+                    set(gui.behavior.pulse_edit, 'String', '');
+                    return
+                elseif isnumeric(fname)
+                    set(gui.behavior.key_add_btn, 'Enable', 'off');
+                    return
+                end
+                pulsef = fullfile(fpath, fname);
+                if exist(posf, 'file') ~= 2; error('Unable to locate %s', posf); end
+                if exist(pulsef, 'file') ~= 2; error('Unable to locate %s', fname); end
+                set(gui.behavior.pulse_edit, 'String', pulsef);
+                set(gui.behavior.key_add_btn, 'Enable', 'on');
+            otherwise
+                return
+        end
+    end
+
+    function behavior_add_fcn(src, event)
+        posf = get(gui.behavior.position_edit, 'String');
+        pulsef = get(gui.behavior.pulse_edit, 'String');
+        if isempty(posf) || isempty(pulsef)
+            set(gui.behavior.key_add_btn, 'Enable', 'off');
+            return
+        end
+        if exist(posf, 'file') ~= 2
+            set(gui.behavior.position_edit, 'String', '');
+            set(gui.behavior.pulse_edit, 'String', '');
+            set(gui.behavior.pulse_edit, 'Enable', 'off');
+            set(gui.behavior.pulse_btn, 'Enable', 'off');
+            set(gui.behavior.key_add_btn, 'Enable', 'off');
+            error('Unable to locate %s', posf)
+        end
+        if exist(pulsef, 'file') ~= 2
+            set(gui.behavior.pulse_edit, 'String', '');
+            set(gui.behavior.key_add_btn, 'Enable', 'off');
+            error('Unable to locate %s', fname)
+        end
+        % TODO: import
+        % TODO: insert
+        behavior_update_fcn();
+        set(gui.behavior.position_edit, 'String', '');
+        set(gui.behavior.pulse_edit, 'String', '');
+        set(gui.behavior.pulse_edit, 'Enable', 'off');
+        set(gui.behavior.pulse_btn, 'Enable', 'off');
+        set(gui.behavior.key_add_btn, 'Enable', 'off');
+    end
+
+    function behavior_rem_fcn(src, event)
+        % TODO: Get uitable cell selection
+        % TODO: Drop selected rows from table
+        behavior_update_fcn();
+    end
+
+    function behavior_cancel_fcn(src, event)
+        set(gui.behavior.position_edit, 'String', '');
+        set(gui.behavior.pulse_edit, 'String', '');
+        set(gui.behavior.pulse_edit, 'Enable', 'off');
+        set(gui.behavior.pulse_btn, 'Enable', 'off');
+        set(gui.behavior.key_add_btn, 'Enable', 'off');
+    end
+
+
 %% (4) helper functions
+
+    function set_visible(s, mode)
+        assert(any(strcmp(mode, {'on', 'off'})));
+        fields = fieldnames(s);
+        for i = 1:numel(fields)
+            set(s.(fields{i}), 'Visible', mode);
+        end
+    end
+
     % zip cellstring and integer into new cellstring
     function keystr = keystr_zipper(cellstr, id)
         n = length(cellstr);
