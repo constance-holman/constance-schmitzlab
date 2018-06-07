@@ -1265,10 +1265,42 @@ fprintf('Done.\n\n');
 
 % (2.8) draw reward table controls
 
+    function [ui, dat] = draw_reward(main, session)
+    end
+
 % (2.9) draw reward_type table controls
 
-% (2.10) draw recording table controls
+    function [ui, dat] = draw_rewardtype(main)
+    end
 
+% (2.10) draw Amplifier table controls
+
+    function [ui, dat] = draw_amplifier(main)
+    end
+
+% (2.11) draw Probe table controls
+    function [ui, dat] = draw_probe(main)
+    end
+
+% (2.12) draw Probetype table controls
+    function [ui, dat] = draw_probetype(main)
+    end
+
+% (2.13) draw Shank table controls
+    function [ui, dat] = draw_shank(main, probetype)
+    end
+
+% (2.14) draw SitePos table controls
+    function [ui, dat] = draw_sitepos(main, shank)
+    end
+
+% (2.15) draw Remapping table controls
+    function [ui, dat] = draw_remapping(main, probetype, amp)
+    end
+
+% (2.16) draw Recording table controls
+    function [ui, dat] = draw_recording(main, session, probe, amplifier)
+    end
         
 %% (3) ui callback functions
 % (3.1) project table callbacks  
@@ -2260,6 +2292,12 @@ fprintf('Done.\n\n');
         set(gui.behavior.pulse_btn, 'Enable', 'off');
         set(gui.behavior.key_add_btn, 'Enable', 'off');
     end
+
+% (3.8) Reward table callbacks
+
+
+
+% (3.9) Reward type tabel callbacks
 
 
 %% (4) helper functions
