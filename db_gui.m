@@ -2342,7 +2342,7 @@ fprintf('Done.\n\n');
             add_state = 'on';
             key_str = keystr_zipper(data.experiment.experimenter, data.experiment.id);
             experimenter_str = data.experiment.experimenter(1);
-            description_str = data.experiment.desc(1);
+            description_str = data.experiment.description(1);
             data.experiment.active = data.experiment.id(1);
         end
         
@@ -3123,7 +3123,6 @@ fprintf('Done.\n\n');
     end
 
 % (3.7) Behavior table callbacks
-
 
     function behavior_update_fcn()
         [   data.behavior.real_x, data.behavior.real_y, ...
