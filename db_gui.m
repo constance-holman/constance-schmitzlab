@@ -3099,8 +3099,12 @@ fprintf('Done.\n\n');
                 set_visible(gui.next1, 'off');
                 set_visible(gui.quickselect1, 'on');
                 set_visible(gui.behavior, 'on');
+                set_visible(gui.remapping, 'on');
                 set_visible(gui.reward, 'on');
                 set_visible(gui.rewardtype, 'on');
+                set_visible(gui.shank, 'on');
+                set_visible(gui.probe, 'on');
+                set_visible(gui.sitepos, 'on');
                 set_visible(gui.amplifier, 'on');
                 set_visible(gui.probetype, 'on')
                 
