@@ -3250,38 +3250,26 @@ fprintf('Done.\n\n');
 % (3.8) Remapping table callbacks
 
     function remapping_update_fcn()
-        [   data.behavior.real_x, data.behavior.real_y, ...
-            data.behavior.virt_x, data.behavior.virt_y, ...
-            data.behavior.time, data.behavior.virt_end, data.behavior.pulse] = ...
-                mysql(sprintf('select real_x, real_y, virt_x, virt_y, time, virt_end, pulse from Behavior where session_id = %d;', ...
-                data.session.active));
-        if data.session.active == -1
-            edit_state = 'off'; % show editbox, add and cancel btn
-            rem_state = 'off';
-        elseif numel(data.behavior.time) == 0 % empty table where session_id
-            edit_state = 'on'; % show editbox, add and cancel btn
-            rem_state = 'off';
+       [data.remapping.probe_channel, data.remapping.connector_channel, data.remapping.headstage_channel] = ...
+                mysql(sprintf('select probe_channel, connector_channel, headstage_channel from Remapping where probe_type_id = %d and amplifier_id = %d;', ...
+                data.probetype.active, data.amplifier.active));
+        if numel(data.remapping.probe_channel) == 0 % empty table
+            state = 'off'; % show editbox, add and cancel btn
         else % populated table
-            edit_state = 'on';
-            rem_state = 'on';
+            state = 'on';
         end
         
-        data.behavior.virt_end = strcmpi(data.behavior.virt_end, '1');
-        data.behavior.pulse = strcmpi(data.behavior.pulse, '1');
+        set(gui.remapping.table, 'Data', ...
+            [data.remapping.probe_channel, ...
+            data.remapping.connector_channel, ...
+            data.remapping.headstage_channel]);
         
-        set(gui.behavior.table, 'Data', ...
-            [data.behavior.real_x, data.behavior.real_y, ...
-             data.behavior.virt_x, data.behavior.virt_y, ...
-             data.behavior.time, data.behavior.virt_end, ...
-            data.behavior.pulse]);
-        
-        set(gui.behavior.position_edit, 'Enable', edit_state);
-        set(gui.behavior.position_btn, 'Enable', edit_state);
-        set(gui.behavior.pulse_edit, 'Enable', 'off');
-        set(gui.behavior.pulse_btn, 'Enable', 'off'),
-        set(gui.behavior.table, 'Enable', edit_state);
-        set(gui.behavior.key_rem_btn, 'Enable', rem_state);
-        set(gui.behavior.key_cancel_btn, 'Enable', edit_state);
+        set(gui.remapping.file_edit, 'Enable', 'off');
+        set(gui.remapping.file_btn, 'Enable', 'on');
+        set(gui.behavior.table, 'Enable', state);
+        set(gui.behavior.key_rem_btn, 'Enable', state);
+        set(gui.behavior.key_add_btn, 'Enable', 'off');
+        set(gui.behavior.key_cancel_btn, 'Enable', 'off');
     end
 
     function remapping_select_fcn(src, event)
@@ -3373,10 +3361,10 @@ fprintf('Done.\n\n');
             num_sites = sum(shank == ushank(j));
             shank_key = [type, '_', num2str(j)];
             shank_id = insert_shank(probe_type_id, ...
-                'Sites', num_sites, 'Verbose', args.verbose);
+                'Sites', num_sites, 'Verbose', true);
             x(isnan(x)) = 0;
             y(isnan(y)) = 0;
-            insert_sitepos(shank_id, [x,y], [1:numel(probechan)]', 'Verbose', args.verbose);
+            insert_sitepos(shank_id, [x,y], [1:numel(probechan)]', 'Verbose', true);
         end
         
         remapping_update_fcn();
@@ -3388,23 +3376,21 @@ fprintf('Done.\n\n');
         set(gui.remapping.file_edit, 'String', '');
         set(gui.remapping.file_edit, 'Enable', 'off');
         set(gui.remapping.key_add_btn, 'Enable', 'off');
+        set(gui.remapping.key_cancel_btn, 'Enable', 'off');
     end
 
     function remapping_rem_fcn(src, event)
         % TODO: Get uitable cell selection
         % TODO: Drop selected rows from table
-        behavior_update_fcn();
+        remapping_update_fcn();
     end
 
     function remapping_cancel_fcn(src, event)
-        set(gui.behavior.position_edit, 'String', '');
-        set(gui.behavior.pulse_edit, 'String', '');
-        set(gui.behavior.pulse_edit, 'Enable', 'off');
-        set(gui.behavior.pulse_btn, 'Enable', 'off');
-        set(gui.behavior.key_add_btn, 'Enable', 'off');
+        set(gui.remapping.file_edit, 'String', '');
+        set(gui.remapping.file_btn, 'Enable', 'on');
+        set(gui.remapping.key_add_btn, 'Enable', 'off');
+        set(gui.remapping.key_cancel_btn, 'Enable', 'off');
     end
-
-
 
 
 % (3.9) Reward type tabel callbacks
