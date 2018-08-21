@@ -1787,11 +1787,9 @@ fprintf('Done.\n\n');
             dat.headstage_channel = [];
         end
         if numel(dat.probe_channel) == 0 % empty table
-            popup_state = 'off';
-            edit_state = 'on'; % show editbox, add and cancel btn
+            state = 'off';
         else % populated table
-            popup_state = 'on'; % show key select popup
-            edit_state = 'off';
+            state = 'on';
         end
         
         % draw ui controls
@@ -1852,12 +1850,11 @@ fprintf('Done.\n\n');
             'Visible', 'on', ...
             'String', 'Select', ...
             'Callback', @remapping_select_fcn, ...
-            'Tag', 'position', ...
             'Position', [297.5 15 45 22.5]);
         ui.key_add_btn = uicontrol('Parent', ui.panel, ... 
             'Style', 'pushbutton', ...
             'Units', 'pixel', ...
-            'Enable', popup_state, ...
+            'Enable', 'off', ...
             'Visible', 'on', ...
             'String', '+', ...
             'Callback', @remapping_add_fcn, ...
@@ -1865,7 +1862,7 @@ fprintf('Done.\n\n');
         ui.key_rem_btn = uicontrol('Parent', ui.panel, ... 
             'Style', 'pushbutton', ...
             'Units', 'pixel', ...
-            'Enable', popup_state, ...
+            'Enable', state, ...
             'Visible', 'on', ...
             'String', '-', ...
             'Callback', @remapping_rem_fcn, ...
@@ -1873,7 +1870,7 @@ fprintf('Done.\n\n');
         ui.key_cancel_btn = uicontrol('Parent', ui.panel, ... 
             'Style', 'pushbutton', ...
             'Units', 'pixel', ...
-            'Enable', edit_state, ...
+            'Enable', 'off', ...
             'Visible', 'on', ...
             'String', 'x', ...
             'Callback', @remapping_cancel_fcn, ...
@@ -3250,7 +3247,163 @@ fprintf('Done.\n\n');
         set(gui.behavior.key_add_btn, 'Enable', 'off');
     end
 
-% (3.8) Reward table callbacks
+% (3.8) Remapping table callbacks
+
+    function remapping_update_fcn()
+        [   data.behavior.real_x, data.behavior.real_y, ...
+            data.behavior.virt_x, data.behavior.virt_y, ...
+            data.behavior.time, data.behavior.virt_end, data.behavior.pulse] = ...
+                mysql(sprintf('select real_x, real_y, virt_x, virt_y, time, virt_end, pulse from Behavior where session_id = %d;', ...
+                data.session.active));
+        if data.session.active == -1
+            edit_state = 'off'; % show editbox, add and cancel btn
+            rem_state = 'off';
+        elseif numel(data.behavior.time) == 0 % empty table where session_id
+            edit_state = 'on'; % show editbox, add and cancel btn
+            rem_state = 'off';
+        else % populated table
+            edit_state = 'on';
+            rem_state = 'on';
+        end
+        
+        data.behavior.virt_end = strcmpi(data.behavior.virt_end, '1');
+        data.behavior.pulse = strcmpi(data.behavior.pulse, '1');
+        
+        set(gui.behavior.table, 'Data', ...
+            [data.behavior.real_x, data.behavior.real_y, ...
+             data.behavior.virt_x, data.behavior.virt_y, ...
+             data.behavior.time, data.behavior.virt_end, ...
+            data.behavior.pulse]);
+        
+        set(gui.behavior.position_edit, 'Enable', edit_state);
+        set(gui.behavior.position_btn, 'Enable', edit_state);
+        set(gui.behavior.pulse_edit, 'Enable', 'off');
+        set(gui.behavior.pulse_btn, 'Enable', 'off'),
+        set(gui.behavior.table, 'Enable', edit_state);
+        set(gui.behavior.key_rem_btn, 'Enable', rem_state);
+        set(gui.behavior.key_cancel_btn, 'Enable', edit_state);
+    end
+
+    function remapping_select_fcn(src, event)
+            [fname, fpath] = uigetfile('*', 'Pick a remapping file.');
+            if isnumeric(fname) % selection canceled
+                set(gui.remapping.file_edit, 'Enable', 'off');
+                set(gui.remapping.file_edit, 'String', '');
+                set(gui.remapping.key_add_btn, 'Enable', 'off');
+                set(gui.remapping.key_cancel_btn, 'Enable', 'off');
+                return
+            end
+            remapf = fullfile(fpath, fname);
+            if exist(remapf, 'file') ~= 2; error('Unable to locate %s', fname); end
+            set(gui.remapping.file_edit, 'String', remapf);
+            set(gui.remapping.key_add_btn, 'Enable', 'on');
+            set(gui.remapping.key_cancel_btn, 'Enable', 'on');
+    end
+
+    function remapping_add_fcn(src, event)
+        remapf = get(gui.remapping.file_edit, 'String');
+        if isempty(remapf)
+            set(gui.remapping.key_add_btn, 'Enable', 'off');
+            return
+        end
+        if exist(remapf, 'file') ~= 2
+            set(gui.remapping.file_edit, 'String', '');
+            set(gui.remapping.file_edit, 'Enable', 'off');
+            set(gui.remapping.key_add_btn, 'Enable', 'off');
+            error('Unable to locate %s', posf)
+        end
+        
+        % extract metadata
+        [~, fname, ext] = fileparts(remapf);
+        finfo = regexp(fname, 'ProbeRemapping_(?<brand>\w+)_(?<type>\w+)_(?<amp>\w+)', 'names');
+        if isempty(finfo) || ~strcmpi(ext, '.csv')
+            error('No matching ProbeRemapping_$brand_$type_$amp.csv file found.')
+        end
+        amp = finfo.amp;
+        type = [finfo.brand, '_', finfo.type];
+        
+        % check if metadata is present in database
+        amplifier_id = mysql(sprintf('select amplifier_id from Amplifier where name = "%s"', amp));
+        if isempty(amplifier_id)
+            uin = input('Unknown Amplifier "%s". Insert new row? [Y]es, [n]o: ', 's');
+            if isempty(uin) || any(strcmpi(uin, {'y, yes'}))
+                amplifier_id = insert_amplifier(amp, 'Verbose', true);
+            else
+                fprintf('\nOkay, bye.\n')
+                return;
+            end
+        end
+        
+        probe_type_id = mysql(sprintf('select probe_type_id from ProbeType where type = "%s"', type));
+        if isempty(probe_type_id)
+            uin = input('Unknown ProbeType "%s". Insert new row? [Y]es, [n]o: ', 's');
+            if isempty(uin) || any(strcmpi(uin, {'y, yes'}))
+                probe_type_id = insert_probetype(type, 'Verbose', true);
+            else
+                fprintf('\nOkay, bye.\n')
+                return;
+            end
+        end
+        
+        if logical(mysql(sprintf( ...
+            'select count(1) from Remapping where amplifier_id=%d and probe_type_id=%d', ...
+            amplifier_id, probe_type_id)))
+            uin = input('Remapping already in database! [R]eplace, [s]kip: ', 's');
+            if isempty(uin) || any(strcmpi(uin, {'r', 'replace'}))
+                % drop values from db
+                mysql(sprintf('delete from Remapping where amplifier_id=%d and probe_type_id=%d', ...
+                    amplifier_id, probe_type_id));
+            else
+                fprintf('\nOkay, bye.\n')
+                return;
+            end
+        end
+        
+        % import remap data
+        [shank, probechan, connectorchan, headstagechan, x, y] = import_remapping(remapf);
+        
+        % insert remap table
+        insert_remapping(probe_type_id, amplifier_id, ...
+            'Probe', probechan, 'Headstage', headstagechan, 'Connector', connectorchan, ...
+            'Verbose', true);
+        
+        % insert shank and sitepos
+        ushank = unique(shank);
+        for j = 1:numel(ushank)
+            num_sites = sum(shank == ushank(j));
+            shank_key = [type, '_', num2str(j)];
+            shank_id = insert_shank(probe_type_id, ...
+                'Sites', num_sites, 'Verbose', args.verbose);
+            x(isnan(x)) = 0;
+            y(isnan(y)) = 0;
+            insert_sitepos(shank_id, [x,y], [1:numel(probechan)]', 'Verbose', args.verbose);
+        end
+        
+        remapping_update_fcn();
+        %amplifier_update_fcn();
+        %probetype_update_fcn();
+        %shank_update_fcn();
+        %sitepos_update_fcn();
+        
+        set(gui.remapping.file_edit, 'String', '');
+        set(gui.remapping.file_edit, 'Enable', 'off');
+        set(gui.remapping.key_add_btn, 'Enable', 'off');
+    end
+
+    function remapping_rem_fcn(src, event)
+        % TODO: Get uitable cell selection
+        % TODO: Drop selected rows from table
+        behavior_update_fcn();
+    end
+
+    function remapping_cancel_fcn(src, event)
+        set(gui.behavior.position_edit, 'String', '');
+        set(gui.behavior.pulse_edit, 'String', '');
+        set(gui.behavior.pulse_edit, 'Enable', 'off');
+        set(gui.behavior.pulse_btn, 'Enable', 'off');
+        set(gui.behavior.key_add_btn, 'Enable', 'off');
+    end
+
 
 
 
