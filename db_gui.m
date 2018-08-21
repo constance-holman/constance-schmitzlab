@@ -3395,6 +3395,156 @@ fprintf('Done.\n\n');
 
 % (3.9) Reward type tabel callbacks
 
+    function rewardtype_update_fcn()
+        
+        [data.rewardtype.id, data.rewardtype.type, data.rewardtype.name, data.rewardtype.note] = ...
+                mysql('select reward_type_id, reward_type, name, note from RewardType;');
+        if numel(data.rewardtype.id) == 0 % empty table where project_id
+            popup_state = 'off';
+            edit_state = 'on'; % show editbox, add and cancel btn
+            add_state = 'on';
+            key_str = {'Create new'};
+            name_str = '';
+            type_str = '';
+            note_str = '';
+            data.rewardtype.active = -1;
+        else % populated table
+            popup_state = 'on'; % show key select popup
+            edit_state = 'off';
+            add_state = 'on';
+            key_str = keystr_zipper(data.rewardtype.name, data.rewardtype.id);
+            name_str = data.rewardtype.name(1);
+            type_str = data.rewardtype.type(1);
+            note_str = data.rewardtype.note(1);
+            data.rewardtype.active = data.rewardtype.id(1);
+        end
+        
+        set(gui.rewardtype.key_popup, 'Enable', popup_state);
+        set(gui.rewardtype.key_popup, 'String', key_str);
+        set(gui.rewardtype.key_popup, 'Value', 1);
+        set(gui.rewardtype.name_edit, 'Enable', edit_state);
+        set(gui.rewardtype.name_edit, 'String', name_str);
+        set(gui.rewardtype.type_edit, 'Enable', edit_state);
+        set(gui.rewardtype.type_edit, 'String', genotype_str);
+        set(gui.rewardtype.note_edit, 'Enable', edit_state);
+        set(gui.rewardtype.note_edit, 'String', note_str);
+        set(gui.rewardtype.key_add_btn, 'Enable', add_state);
+        set(gui.rewardtype.key_rem_btn, 'Enable', popup_state);
+        set(gui.rewardtype.key_cancel_btn, 'Enable', edit_state);
+        
+        % update depending tables
+        reward_update_fcn();
+    end
+
+    function rewardtype_select_fcn(src, event)
+        if isempty(data.rewardtype.id)
+            data.rewardtype.active = -1;
+            set(gui.rewardtype.name_edit, 'String', '');
+            set(gui.rewardtype.type_edit, 'String', '');
+            set(gui.rewardtype.note_edit, 'String', '');
+        else
+            val = get(src, 'Value');
+            data.rewardtype.active = data.rewardtype.id(val);
+            set(gui.rewardtype.name_edit, 'String', data.rewardtype.name(val));
+            set(gui.rewardtype.type_edit, 'String', data.rewardtype.type(val));
+            set(gui.rewardtype.note_edit, 'String', data.rewardtype.note(val));
+        end
+        % update depending tables
+        reward_update_fcn();
+    end
+
+    function rewardtype_add_fcn(src, event)
+        if strcmp(get(gui.rewardtype.key_popup, 'Enable'), 'on')
+            popup_state = 'off';
+            edit_state = 'on';
+            set(gui.rewardtype.name_edit, 'String', '');
+            set(gui.rewardtype.type_edit, 'String', '');
+            set(gui.rewardtype.note_edit, 'String', '');
+            set(gui.rewardtype.key_popup, 'String', {'Create new'});
+            set(gui.rewardtype.key_popup, 'Value', 1);
+        elseif strcmp(get(gui.rewardtype.name_edit, 'Enable'), 'on')
+            name = get(gui.rewardtype.name_edit, 'String');
+            type = get(gui.rewardtype.type_edit, 'String');
+            note = get(gui.rewardtype.note_edit, 'String');
+            data.rewardtype.id = [data.rewardtype.id; ...
+                insert_rewardtype(name, type, 'Verbose', true)];
+            if isempty(name); name = {''}; end
+            data.rewardtype.name = [data.rewardtype.name; name];
+            if isempty(type); type = {''}; end
+            data.rewardtype.type = [data.rewardtype.type; type];
+            if isempty(note); note = {''}; end
+            data.rewardtype.note = [data.rewardtype.note; note];
+            set(gui.rewardtype.subtitle_text, ...
+                'String', sprintf('( Rows: %d )', length(data.rewardtype.id)));
+            set(gui.rewardtype.key_popup, ...
+                'String', keystr_zipper(data.rewardtype.name, data.rewardtype.id));
+            set(gui.rewardtype.key_popup, ...
+                'Value', length(data.rewardtype.id));
+            rewardtype_select_fcn(src, event); % trigger rewardtype select callback
+            popup_state = 'on';
+            edit_state = 'off';
+        end
+        set(gui.rewardtype.name_edit, 'Enable', edit_state);
+        set(gui.rewardtype.type_edit, 'Enable', edit_state);
+        set(gui.rewardtype.note_edit, 'Enable', edit_state);
+        set(gui.rewardtype.key_popup, 'Enable', popup_state);
+        set(gui.rewardtype.key_cancel_btn, 'Enable', edit_state);
+        set(gui.rewardtype.key_rem_btn, 'Enable', popup_state);
+    end
+
+    function rewardtype_rem_fcn(src, event)
+        val = get(gui.rewardtype.key_popup, 'Value');
+        id = data.rewardtype.id(val);
+        answ = questdlg('Are you sure?', 'Confirm removal', 'Yes', 'No', 'No');
+        if strcmp(answ, 'Yes')
+            % delete row
+            mysql(sprintf('delete from RewardType where reward_type_id = %d;', id));
+            % update ui / data container
+            data.rewardtype.id(val) = [];
+            data.rewardtype.name(val) = [];
+            data.rewardtype.type(val) = [];
+            data.rewardtype.note(val) = [];
+            set(gui.rewardtype.subtitle_text, ...
+                'String', sprintf('( Rows: %d )', length(data.rewardtype.id)));
+            if isempty(data.rewardtype.id) % force edit mode
+                set(gui.rewardtype.name_edit, 'Enable', 'on');
+                set(gui.rewardtype.type_edit, 'Enable', 'on');
+                set(gui.rewardtype.note_edit, 'Enable', 'on');
+                set(gui.rewardtype.key_popup, 'Enable', 'off');
+                set(gui.rewardtype.key_cancel_btn, 'Enable', 'on');
+                set(gui.rewardtype.key_rem_btn, 'Enable', 'off');
+                set(gui.rewardtype.key_popup, 'String', {'Create new'});
+                set(gui.rewardtype.key_popup, 'Value', 1);
+            else
+                set(gui.rewardtype.key_popup, ...
+                'String', keystr_zipper(data.rewardtype.name, data.rewardtype.id));
+                set(gui.rewardtype.key_popup, ...
+                'Value', length(data.rewardtype.id));
+            end
+            rewardtype_select_fcn(src, event);
+        end
+    end
+
+    function rewardtype_cancel_fcn(src, event)
+        if ~isempty(data.rewardtype.id)
+            set(gui.rewardtype.name_edit, 'Enable', 'off');
+            set(gui.rewardtype.type_edit, 'Enable', 'off');
+            set(gui.rewardtype.note_edit, 'Enable', 'off');
+            set(gui.rewardtype.key_popup, 'Enable', 'on');
+            set(gui.rewardtype.key_rem_btn, 'Enable', 'on');
+            set(src, 'Enable', 'off');
+            set(gui.rewardtype.key_popup, ...
+                'String', keystr_zipper(data.rewardtype.name, data.rewardtype.id));
+            set(gui.rewardtype.key_popup, ...
+                'Value', length(data.rewardtype.id));
+            rewardtype_select_fcn(src, event);
+        else
+            set(gui.rewardtype.name_edit, 'String', '');
+            set(gui.rewardtype.type_edit, 'String', '');
+            set(gui.rewardtype.note_edit, 'String', '');
+        end
+    end
+
 
 %% (4) helper functions
 
