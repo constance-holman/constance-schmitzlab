@@ -3545,7 +3545,127 @@ fprintf('Done.\n\n');
         end
     end
 
+% (3.10) Amplifier table controls
 
+    function amplifier_update_fcn()
+        
+        [data.amplifier.id, data.amplifier.name] = ...
+                mysql('select amplifier_id, name from Amplifier;');;
+        if numel(data.amplifier.id) == 0 % empty table where project_id
+            popup_state = 'off';
+            edit_state = 'on'; % show editbox, add and cancel btn
+            add_state = 'on';
+            key_str = {'Create new'};
+            name_str = '';
+            data.amplifier.active = -1;
+        else % populated table
+            popup_state = 'on'; % show key select popup
+            edit_state = 'off';
+            add_state = 'on';
+            key_str = keystr_zipper(data.amplifier.name, data.amplifier.id);
+            name_str = data.amplifier.name(1);
+            data.amplifier.active = data.amplifier.id(1);
+        end
+        
+        set(gui.amplifier.key_popup, 'Enable', popup_state);
+        set(gui.amplifier.key_popup, 'String', key_str);
+        set(gui.amplifier.key_popup, 'Value', 1);
+        set(gui.amplifier.name_edit, 'Enable', edit_state);
+        set(gui.amplifier.name_edit, 'String', name_str);
+        set(gui.amplifier.key_add_btn, 'Enable', add_state);
+        set(gui.amplifier.key_rem_btn, 'Enable', popup_state);
+        set(gui.amplifier.key_cancel_btn, 'Enable', edit_state);
+        
+        % update depending tables
+    end
+
+    function amplifier_select_fcn(src, event)
+        if isempty(data.amplifier.id)
+            data.amplifier.active = -1;
+            set(gui.amplifier.name_edit, 'String', '');
+        else
+            val = get(src, 'Value');
+            data.amplifier.active = data.amplifier.id(val);
+            set(gui.amplifier.name_edit, 'String', data.amplifier.name(val));
+        end
+        % update depending tables
+    end
+
+    function amplifier_add_fcn(src, event)
+        if strcmp(get(gui.amplifier.key_popup, 'Enable'), 'on')
+            popup_state = 'off';
+            edit_state = 'on';
+            set(gui.amplifier.name_edit, 'String', '');
+            set(gui.amplifier.key_popup, 'String', {'Create new'});
+            set(gui.amplifier.key_popup, 'Value', 1);
+        elseif strcmp(get(gui.amplifier.name_edit, 'Enable'), 'on')
+            name = get(gui.amplifier.name_edit, 'String');
+            data.amplifier.id = [data.amplifier.id; ...
+                insert_amplifier(name, 'Verbose', true)];
+            if isempty(name); name = {''}; end
+            data.amplifier.name = [data.amplifier.name; name];
+            set(gui.amplifier.subtitle_text, ...
+                'String', sprintf('( Rows: %d )', length(data.amplifier.id)));
+            set(gui.amplifier.key_popup, ...
+                'String', keystr_zipper(data.amplifier.name, data.amplifier.id));
+            set(gui.amplifier.key_popup, ...
+                'Value', length(data.amplifier.id));
+            amplifier_select_fcn(src, event); % trigger rewardtype select callback
+            popup_state = 'on';
+            edit_state = 'off';
+        end
+        set(gui.amplifier.name_edit, 'Enable', edit_state);
+        set(gui.amplifier.key_popup, 'Enable', popup_state);
+        set(gui.amplifier.key_cancel_btn, 'Enable', edit_state);
+        set(gui.amplifier.key_rem_btn, 'Enable', popup_state);
+    end
+
+    function amplifier_rem_fcn(src, event)
+        val = get(gui.amplifier.key_popup, 'Value');
+        id = data.amplifier.id(val);
+        answ = questdlg('Are you sure?', 'Confirm removal', 'Yes', 'No', 'No');
+        if strcmp(answ, 'Yes')
+            % delete row
+            mysql(sprintf('delete from Amplifier where amplifier_id = %d;', id));
+            % update ui / data container
+            data.amplifier.id(val) = [];
+            data.amplifier.name(val) = [];
+            set(gui.amplifier.subtitle_text, ...
+                'String', sprintf('( Rows: %d )', length(data.amplifier.id)));
+            if isempty(data.amplifier.id) % force edit mode
+                set(gui.amplifier.name_edit, 'Enable', 'on');
+                set(gui.amplifier.key_popup, 'Enable', 'off');
+                set(gui.amplifier.key_cancel_btn, 'Enable', 'on');
+                set(gui.amplifier.key_rem_btn, 'Enable', 'off');
+                set(gui.amplifier.key_popup, 'String', {'Create new'});
+                set(gui.amplifier.key_popup, 'Value', 1);
+            else
+                set(gui.amplifier.key_popup, ...
+                'String', keystr_zipper(data.amplifier.name, data.amplifier.id));
+                set(gui.amplifier.key_popup, ...
+                'Value', length(data.amplifier.id));
+            end
+            amplifier_select_fcn(src, event);
+        end
+    end
+
+    function amplifier_cancel_fcn(src, event)
+        if ~isempty(data.amplifier.id)
+            set(gui.amplifier.name_edit, 'Enable', 'off');
+            set(gui.amplifier.key_popup, 'Enable', 'on');
+            set(gui.amplifier.key_rem_btn, 'Enable', 'on');
+            set(src, 'Enable', 'off');
+            set(gui.amplifier.key_popup, ...
+                'String', keystr_zipper(data.amplifier.name, data.amplifier.id));
+            set(gui.amplifier.key_popup, ...
+                'Value', length(data.amplifier.id));
+            amplifier_select_fcn(src, event);
+        else
+            set(gui.amplifier.name_edit, 'String', '');
+        end
+    end
+
+    
 %% (4) helper functions
 
     function set_visible(s, mode)
