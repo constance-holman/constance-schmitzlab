@@ -1,4 +1,4 @@
-function AlignTsp2Whl(fbasename,colorvec,trackcoord)
+function [interpTsp] = AlignTsp2Whl(fbasename,colorvec,trackcoord)
 
 % USAGE:
 %     AlignTsp2Whl(fbasename,colorvec)
@@ -14,6 +14,8 @@ function AlignTsp2Whl(fbasename,colorvec,trackcoord)
 % corrected bz Antal Berenyi, 2012
 
 %Corrected for Matlab2012 (division by integer problem) - Tony
+
+%Modified Aug 2018 by CH to output (but not save) 1kHz file
 
 % get timestamps and positions from tsp file
 tspdata=load([fbasename '.tsp']);
