@@ -2075,7 +2075,8 @@ fprintf('Done.\n\n');
             'Units', 'pixel', ...
             'Position', [20 15 103 105], ...
             'RowName', [], ...
-            'FontSize', 10);
+            'FontSize', 10, ...
+            'CellSelectionCallback', @shank_select_fcn);
 %         ui.hint_text = uicontrol('Parent', ui.panel, ...
 %             'Style', 'text', ...
 %             'Units', 'pixel', ...
@@ -2104,7 +2105,7 @@ fprintf('Done.\n\n');
         ui.key_cancel_btn = uicontrol('Parent', ui.panel, ... 
             'Style', 'pushbutton', ...
             'Units', 'pixel', ...
-            'Enable', state, ...
+            'Enable', 'off', ...
             'Visible', 'on', ...
             'String', 'x', ...
             'Callback', @shank_cancel_fcn, ...
@@ -3371,8 +3372,8 @@ fprintf('Done.\n\n');
         remapping_update_fcn();
         amplifier_update_fcn();
         probetype_update_fcn();
-        %shank_update_fcn();
-        %sitepos_update_fcn();
+        shank_update_fcn();
+        sitepos_update_fcn();
         
         set(gui.remapping.file_edit, 'String', '');
         set(gui.remapping.file_edit, 'Enable', 'off');
@@ -3724,6 +3725,72 @@ fprintf('Done.\n\n');
     end
 
     function reward_cancel_fcn(src, event)
+        % Adding of Reward times is done via Remapping panel
+    end
+
+% (3.12) Shank table controls
+
+    function shank_update_fcn()
+        
+        [data.shank.id, data.shank.probe_type, data.shank.num_sites] = ...
+                mysql(sprintf('select shank_id, probe_type_id, num_sites from Shank where probe_type_id = %d;', ...
+                data.probetype.active));
+            
+        if numel(data.shank.id) == 0
+            state = 'off';
+        else
+            state = 'on';
+        end
+        
+        set(gui.shank.key_rem_btn, 'Enable', state);
+        set(gui.shank.table, 'Data', [data.shank.id, data.shank.num_sites]);
+        set(gui.shank.table, 'Enable', state);
+        set(gui.shank.subtitle_text, 'String', sprintf('( Rows: %d )', numel(data.shank.id)));
+    end
+
+    function shank_select_fcn(src, event)
+        % get selection index
+        index = get(event, 'Indices'); 
+        gui.shank.selected = index(1);
+        % update sitepos table
+        sitepos_update_fcn();
+    end
+
+    function shank_add_fcn(src, event)
+        % Adding of Reward times is done via Remapping panel
+    end
+
+    function shank_rem_fcn(src, event)
+        % val = get(gui.amplifier.key_popup, 'Value');
+        % id = data.amplifier.id(val);
+        answ = questdlg('Are you sure?', 'Confirm removal', 'Yes', 'No', 'No');
+        if strcmp(answ, 'Yes')
+            msgbox('This feature is not yet implemeted, sorry :(');
+            % delete row
+            % mysql(sprintf('delete from Amplifier where amplifier_id = %d;', id));
+            % update ui / data container
+            % data.amplifier.id(val) = [];
+            % data.amplifier.name(val) = [];
+            % set(gui.amplifier.subtitle_text, ...
+            %     'String', sprintf('( Rows: %d )', length(data.amplifier.id)));
+            % if isempty(data.amplifier.id) % force edit mode
+            %     set(gui.amplifier.name_edit, 'Enable', 'on');
+            %     set(gui.amplifier.key_popup, 'Enable', 'off');s
+            %     set(gui.amplifier.key_cancel_btn, 'Enable', 'on');
+            %     set(gui.amplifier.key_rem_btn, 'Enable', 'off');
+            %     set(gui.amplifier.key_popup, 'String', {'Create new'});
+            %     set(gui.amplifier.key_popup, 'Value', 1);
+            % else
+            %     set(gui.amplifier.key_popup, ...
+            %     'String', keystr_zipper(data.amplifier.name, data.amplifier.id));
+            %    set(gui.amplifier.key_popup, ...
+            %     'Value', length(data.amplifier.id));
+            % end
+            % amplifier_select_fcn(src, event);
+        end
+    end
+
+    function shank_cancel_fcn(src, event)
         % Adding of Reward times is done via Remapping panel
     end
     
