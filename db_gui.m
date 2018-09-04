@@ -80,6 +80,7 @@ end
 % (1.5) draw gui
 fprintf('Creating main window... ');
 [gui, data] = draw_main();
+
 fprintf('Done.\n\n');
 
 % end of main function
@@ -3792,6 +3793,129 @@ fprintf('Done.\n\n');
 
     function shank_cancel_fcn(src, event)
         % Adding of Reward times is done via Remapping panel
+    end
+
+% (3.13) ProbeType table controls
+
+    function probetype_update_fcn()
+        
+        [data.probetype.id, data.probetype.type] = ...
+                mysql('select probe_type_id, type from ProbeType;');
+        if numel(data.probetype.id) == 0 % empty table
+            popup_state = 'off';
+            edit_state = 'on'; % show editbox, add and cancel btn
+            add_state = 'on';
+            key_str = {'Create new'};
+            type_str = '';
+            data.probetype.active = -1;
+        else % populated table
+            popup_state = 'on'; % show key select popup
+            edit_state = 'off';
+            add_state = 'on';
+            key_str = keystr_zipper(data.probetype.type, data.probetype.id);
+            type_str = data.probetype.type(1);
+            data.probetype.active = data.probetype.id(1);
+        end
+        
+        set(gui.probetype.key_popup, 'Enable', popup_state);
+        set(gui.probetype.key_popup, 'String', key_str);
+        set(gui.probetype.key_popup, 'Value', 1);
+        set(gui.probetype.type_edit, 'Enable', edit_state);
+        set(gui.probetype.type_edit, 'String', type_str);
+        set(gui.probetype.key_add_btn, 'Enable', add_state);
+        set(gui.probetype.key_rem_btn, 'Enable', popup_state);
+        set(gui.probetype.key_cancel_btn, 'Enable', edit_state);
+        
+        % update depending tables
+        probe_update_fcn();
+    end
+
+    function probetype_select_fcn(src, event)
+        if isempty(data.probetype.id)
+            data.probetype.active = -1;
+            set(gui.probetype.type_edit, 'String', '');
+        else
+            val = get(src, 'Value');
+            data.probetype.active = data.probetype.id(val);
+            set(gui.probetype.type_edit, 'String', data.probetype.type(val));
+        end
+        
+        % update depending tables
+        probe_update_fcn();
+    end
+
+    function probetype_add_fcn(src, event)
+        if strcmp(get(gui.probetype.key_popup, 'Enable'), 'on')
+            popup_state = 'off';
+            edit_state = 'on';
+            set(gui.probetype.type_edit, 'String', '');
+            set(gui.probetype.key_popup, 'String', {'Create new'});
+            set(gui.probetype.key_popup, 'Value', 1);
+        elseif strcmp(get(gui.probetype.type_edit, 'Enable'), 'on')
+            type = get(gui.probetype.type_edit, 'String');
+            data.probetype.id = [data.probetype.id; ...
+                insert_probetype(type, 'Verbose', true)];
+            if isempty(type); type = {''}; end
+            data.probetype.type = [data.probetype.type; type];
+            set(gui.probetype.subtitle_text, ...
+                'String', sprintf('( Rows: %d )', length(data.probetype.id)));
+            set(gui.probetype.key_popup, ...
+                'String', keystr_zipper(data.probetype.type, data.probetype.id));
+            set(gui.probetype.key_popup, ...
+                'Value', length(data.probetype.id));
+            probetype_select_fcn(src, event); % trigger select callback
+            popup_state = 'on';
+            edit_state = 'off';
+        end
+        set(gui.probetype.type_edit, 'Enable', edit_state);
+        set(gui.probetype.key_popup, 'Enable', popup_state);
+        set(gui.probetype.key_cancel_btn, 'Enable', edit_state);
+        set(gui.probetype.key_rem_btn, 'Enable', popup_state);
+    end
+
+    function probetype_rem_fcn(src, event)
+        val = get(gui.probetype.key_popup, 'Value');
+        id = data.probetype.id(val);
+        answ = questdlg('Are you sure?', 'Confirm removal', 'Yes', 'No', 'No');
+        if strcmp(answ, 'Yes')
+            % delete row
+            mysql(sprintf('delete from ProbeType where probe_type_id = %d;', id));
+            % update ui / data container
+            data.probetype.id(val) = [];
+            data.probetype.type(val) = [];
+            set(gui.probetype.subtitle_text, ...
+                'String', sprintf('( Rows: %d )', length(data.probetype.id)));
+            if isempty(data.probetype.id) % force edit mode
+                set(gui.probetype.type_edit, 'Enable', 'on');
+                set(gui.probetype.key_popup, 'Enable', 'off');
+                set(gui.probetype.key_cancel_btn, 'Enable', 'on');
+                set(gui.probetype.key_rem_btn, 'Enable', 'off');
+                set(gui.probetype.key_popup, 'String', {'Create new'});
+                set(gui.probetype.key_popup, 'Value', 1);
+            else
+                set(gui.probetype.key_popup, ...
+                'String', keystr_zipper(data.probetype.type, data.probetype.id));
+                set(gui.probetype.key_popup, ...
+                'Value', length(data.probetype.id));
+            end
+            probetype_select_fcn(src, event);
+        end
+    end
+
+    function probetype_cancel_fcn(src, event)
+        if ~isempty(data.probetype.id)
+            set(gui.probetype.type_edit, 'Enable', 'off');
+            set(gui.probetype.key_popup, 'Enable', 'on');
+            set(gui.probetype.key_rem_btn, 'Enable', 'on');
+            set(src, 'Enable', 'off');
+            set(gui.probetype.key_popup, ...
+                'String', keystr_zipper(data.probetype.type, data.probetype.id));
+            set(gui.probetype.key_popup, ...
+                'Value', length(data.probetype.id));
+            probetype_select_fcn(src, event);
+        else
+            set(gui.probetype.type_edit, 'String', '');
+        end
     end
     
 %% (4) helper functions
