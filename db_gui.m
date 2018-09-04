@@ -1904,7 +1904,7 @@ fprintf('Done.\n\n');
         else % populated table
             popup_state = 'on'; % show key select popup
             edit_state = 'off';
-            key_str = keystr_zipper(dat.serialnum, dat.id);
+            key_str = keystr_zipper(dat.id, dat.probe_type);
             serialnum_str = dat.serialnum(1);
             probe_type_str = dat.probe_type(1);
             dat.active = dat.id(1);
@@ -1943,13 +1943,13 @@ fprintf('Done.\n\n');
             'String', 'Key:', ...
             'Enable', 'on', ...
             'HorizontalAlignment', 'left', ...
-            'Visible', 'on', ...
+            'Visible', edit_state, ...
             'Position', [15 90 66 26]);
         ui.key_popup = uicontrol('Parent', ui.panel, ...
             'Style', 'popupmenu', ...
             'Units', 'pixel', ...
             'Enable', popup_state, ...
-            'Visible', 'on', ...
+            'Visible', edit_state, ...
             'Position', [15 91 105 4], ...
             'FontSize', 10, ...
             'String', key_str, ...
@@ -1963,13 +1963,13 @@ fprintf('Done.\n\n');
             'String', 'Type:', ...
             'Enable', 'on', ...
             'HorizontalAlignment', 'left', ...
-            'Visible', 'on', ...
+            'Visible', popup_state, ...
             'Position', [15 90 66 26]);
         ui.probe_type_popup = uicontrol('Parent', ui.panel, ...
             'Style', 'popupmenu', ...
             'Units', 'pixel', ...
             'Enable', edit_state, ...
-            'Visible', 'on', ...
+            'Visible', popup_state, ...
             'Position', [15 91 105 4], ...
             'FontSize', 10, ...
             'String', probe_type_str, ...
@@ -1987,17 +1987,17 @@ fprintf('Done.\n\n');
         ui.serialnum_edit = uicontrol('Parent', ui.panel, ...
             'Style', 'edit', ...
             'Units', 'pixel', ...
-            'Enable', edit_state, ...
+            'Enable', popup_state, ...
             'String', serialnum_str, ...
             'Visible', 'on', ...
             'Position', [15 15 104 25]);
         ui.key_add_btn = uicontrol('Parent', ui.panel, ... 
             'Style', 'pushbutton', ...
             'Units', 'pixel', ...
-            'Enable', popup_state, ...
+            'Enable', 'on', ...
             'Visible', 'on', ...
             'String', '+', ...
-            'Callback', @amplifier_add_fcn, ...
+            'Callback', @probe_add_fcn, ...
             'Position', [145 75 25 25]);
         ui.key_rem_btn = uicontrol('Parent', ui.panel, ... 
             'Style', 'pushbutton', ...
@@ -2005,15 +2005,15 @@ fprintf('Done.\n\n');
             'Enable', popup_state, ...
             'Visible', 'on', ...
             'String', '-', ...
-            'Callback', @amplifier_rem_fcn, ...
+            'Callback', @probe_rem_fcn, ...
             'Position', [145 45 25 25]);
         ui.key_cancel_btn = uicontrol('Parent', ui.panel, ... 
             'Style', 'pushbutton', ...
             'Units', 'pixel', ...
-            'Enable', edit_state, ...
+            'Enable', 'off', ...
             'Visible', 'on', ...
             'String', 'x', ...
-            'Callback', @amplifier_cancel_fcn, ...
+            'Callback', @probe_cancel_fcn, ...
             'Position', [145 15 25 25]);
     end
 
@@ -3117,6 +3117,15 @@ fprintf('Done.\n\n');
                 set(gui.quickselect1.experiment_popup, 'Value', get(gui.experiment.key_popup, 'Value'));
                 set(gui.quickselect1.animal_popup, 'Value', get(gui.animal.key_popup, 'Value'));
                 set(gui.quickselect1.session_popup, 'Value', get(gui.session.key_popup, 'Value'));
+                
+                % fix probe panel layout fuck-up
+                set(gui.probe.probe_type_text, 'Visible', 'off');
+                set(gui.probe.probe_type_popup, 'Visible', 'off');
+                set(gui.probe.key_text, 'Visible', 'on');
+                set(gui.probe.key_popup, 'Visible', 'on');
+                set(gui.probe.serialnum_edit, 'Enable', 'off');
+                
+                
             case 3
             otherwise
         end
@@ -3917,6 +3926,150 @@ fprintf('Done.\n\n');
             set(gui.probetype.type_edit, 'String', '');
         end
     end
+
+% (3.14) Probe table controls
+
+    function probe_update_fcn()
+        [data.probe.id, data.probe.probe_type_id, data.probe.probe_type, data.probe.serialnum] = ...
+                mysql('select probe_id, Probe.probe_type_id, ProbeType.type, serialnum from Probe inner join ProbeType on Probe.probe_type_id=ProbeType.probe_type_id;');
+        if numel(data.probe.id) == 0 % empty table
+            popup_state = 'off';
+            key_str = {'Create new'};
+            serialnum_str = '';
+            data.probe.active = -1;
+        else % populated table
+            popup_state = 'on'; % show key select popup
+            key_str = keystr_zipper(data.probe.id, data.probe.probe_type);
+            serialnum_str = data.probe.serialnum(1);
+            data.probe.active = data.probe.id(1);
+        end
+        
+        set(gui.probe.key_popup, 'Enable', popup_state);
+        set(gui.probe.key_popup, 'String', key_str);
+        set(gui.probe.key_popup, 'Value', 1);
+        set(gui.probe.key_popup, 'Visible', 'on');
+        set(gui.probe.probe_type_popup, 'String', data.probetype.type);
+        set(gui.probe.probe_type_popup, 'Value', 1);
+        set(gui.probe.probe_type_text, 'Visible', 'off');
+        set(gui.probe.probe_type_popup, 'Visible', 'off');
+        set(gui.probe.serialnum_edit, 'Enable', 'off');
+        set(gui.probe.serialnum_edit, 'String', serialnum_str);
+        set(gui.probe.key_add_btn, 'Enable', 'on');
+        set(gui.probe.key_rem_btn, 'Enable', popup_state);
+        set(gui.probe.key_cancel_btn, 'Enable', 'off');
+        
+        % update depending tables
+        %recording_update_fcn();
+    end
+
+    function probe_select_fcn(src, event)
+        if isempty(data.probe.id)
+            data.probe.active = -1;
+            set(gui.probe.serialnum_edit, 'String', '');
+        else
+            val = get(src, 'Value');
+            data.probe.active = data.probe.id(val);
+            set(gui.probe.serialnum_edit, 'String', data.probe.serialnum(val));
+        end
+        
+        % update depending tables
+        %recording_update_fcn();
+    end
+
+    function probe_add_fcn(src, event)
+        if strcmp(get(gui.probe.key_popup, 'Visible'), 'on')
+            set(gui.probe.probe_type_text, 'Visible', 'on');
+            set(gui.probe.probe_type_popup, 'String', data.probetype.type);
+            set(gui.probe.probe_type_popup, 'Value', 1);
+            set(gui.probe.probe_type_popup, 'Visible', 'on');
+            set(gui.probe.probe_type_popup, 'Enable', 'on');
+            set(gui.probe.key_popup, 'Visible', 'off');
+            set(gui.probe.key_text, 'Visible', 'off');       
+            set(gui.probe.serialnum_edit, 'Enable', 'on');
+            set(gui.probe.serialnum_edit, 'String', '');
+            set(gui.probe.key_cancel_btn, 'Enable', 'on');
+            set(gui.probe.key_rem_btn, 'Enable', 'off');
+        elseif strcmp(get(gui.probe.probe_type_popup, 'Visible'), 'on')
+            val = get(gui.probe.probe_type_popup, 'Value');
+            probe_type_id = data.probetype.id(val);
+            serialnum = get(gui.probe.serialnum_edit, 'String');
+            data.probe.id = [data.probe.id; ...
+                insert_probe(probe_type_id, serialnum, 'Verbose', true)];
+            data.probe.probe_type_id = [data.probe.probe_type_id; probe_type_id];
+            data.probe.probe_type = [data.probe.probe_type; data.probetype.type(val)];
+            if isempty(serialnum); serialnum = {''}; end
+            data.probe.serialnum = [data.probe.serialnum; serialnum];
+            set(gui.probe.subtitle_text, ...
+                'String', sprintf('( Rows: %d )', length(data.probe.id)));
+            set(gui.probe.key_popup, ...
+                'String', keystr_zipper(data.probe.id, data.probe.probe_type));
+            set(gui.probe.key_popup, ...
+                'Value', length(data.probe.id));
+            probe_select_fcn(gui.probe.probe_type_popup, event); % trigger select callback
+            set(gui.probe.serialnum_edit, 'Enable', 'off');
+            set(gui.probe.key_popup, 'Visible', 'on');
+            set(gui.probe.key_text, 'Visible', 'on');
+            set(gui.probe.probe_type_text, 'Visible', 'off');
+            set(gui.probe.probe_type_popup, 'Visible', 'off');
+            set(gui.probe.key_cancel_btn, 'Enable', 'off');
+            set(gui.probe.key_rem_btn, 'Enable', 'on');
+        end
+    end
+
+    function probe_rem_fcn(src, event)
+        val = get(gui.probe.key_popup, 'Value');
+        id = data.probe.id(val);
+        answ = questdlg('Are you sure?', 'Confirm removal', 'Yes', 'No', 'No');
+        if strcmp(answ, 'Yes')
+            % delete row
+            mysql(sprintf('delete from Probe where probe_id = %d;', id));
+            % update ui / data container
+            data.probe.id(val) = [];
+            data.probe.probe_type(val) = [];
+            data.probe.probe_type_id(val) = [];
+            data.probe.serialnum(val) = [];
+            set(gui.probe.subtitle_text, ...
+                'String', sprintf('( Rows: %d )', length(data.probe.id)));
+            if isempty(data.probe.id) % force edit mode
+                set(gui.probe.key_cancel_btn, 'Enable', 'off');
+                set(gui.probe.key_rem_btn, 'Enable', 'off');
+                set(gui.probe.key_popup, 'String', {'Create new'});
+                set(gui.probe.key_popup, 'Value', 1);
+            else
+                set(gui.probe.key_popup, ...
+                'String', keystr_zipper(data.probe.id, data.probe.probe_type));
+                set(gui.probe.key_popup, ...
+                'Value', length(data.probe.id));
+            end
+            probe_select_fcn(gui.probe.key_popup, event);
+        end
+    end
+
+    function probe_cancel_fcn(src, event)
+        set(gui.probe.probe_type_text, 'Visible', 'off');
+        set(gui.probe.probe_type_popup, 'Visible', 'off');
+        set(gui.probe.key_popup, 'Visible', 'on');
+        set(gui.probe.key_text, 'Visible', 'on');
+        set(gui.probe.serialnum_edit, 'Enable', 'off');
+        set(gui.probe.key_cancel_btn, 'Enable', 'off');
+        
+        if ~isempty(data.probe.id)
+            set(gui.probe.key_rem_btn, 'Enable', 'on');
+            set(gui.probe.key_popup, 'Enable', 'on');
+
+            set(gui.probe.key_popup, ...
+                'String', keystr_zipper(data.probe.id, data.probetype.probe_type));
+            set(gui.probe.key_popup, ...
+                'Value', length(data.probe.id));
+            probe_select_fcn(gui.probe.key_popup, event);
+        else
+            set(gui.probe.key_rem_btn, 'Enable', 'off');
+            set(gui.probe.key_popup, 'String', {'Create new'});
+            set(gui.probe.key_popup, 'Value', 1);
+             set(gui.probe.key_popup, 'Enable', 'off');
+            set(gui.probe.serialnum_edit, 'String', '');
+        end        
+    end
     
 %% (4) helper functions
 
@@ -3929,15 +4082,37 @@ fprintf('Done.\n\n');
     end
 
     % zip cellstring and integer into new cellstring
-    function keystr = keystr_zipper(cellstr, id)
-        n = length(cellstr);
+    function keystr = keystr_zipper(one, two)
+        n = length(one);
+        m = length(two);
         keystr = cell(n, 1);
-        if n == 0
+        if n == 0 || n ~= m 
             keystr = {''};
             return;
         end
         for i = 1:n
-            keystr{i} = sprintf('%s (ID: %d)', cellstr{i}, id(i));
+            if iscellstr(one)
+                a = one{i};
+                fmt_a = '%s';
+            elseif iscell(one)
+                a = one{i};
+                fmt_a = '%d';
+            else
+                a = one(i);
+                fmt_a = '%d';
+            end
+            if iscellstr(two)
+                b = two{i};
+                fmt_b = '%s';
+            elseif iscell(two)
+                b = two{i};
+                fmt_b = '%d';
+            else
+                b = two(i);
+                fmt_b = '%d';
+            end
+            
+            keystr{i} = sprintf(sprintf('%s (ID: %s)', fmt_a, fmt_b), a, b);
         end
     end
 
