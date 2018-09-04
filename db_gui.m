@@ -2040,6 +2040,9 @@ fprintf('Done.\n\n');
             dat.active = dat.id(1);
         end
         
+        % init row selection index
+        dat.active = -1;
+        
         % draw ui controls
         ui.panel = uipanel('Parent', main, ...
             'BorderType', 'line', ...
@@ -2161,7 +2164,7 @@ fprintf('Done.\n\n');
             'Visible', 'on', ...
             'Position', [115 120 80 26]);
         ui.table = uitable('Parent', ui.panel, ...
-            'Enable', state, ...
+            'Enable', 'on', ...
             'ColumnName', {'Site','X', 'Y'}, ...
             'ColumnFormat', {'numeric', 'numeric', 'numeric'}, ...
             'ColumnWidth', {50, 25, 25}, ...
@@ -3760,8 +3763,7 @@ fprintf('Done.\n\n');
 
     function shank_select_fcn(src, event)
         % get selection index
-        index = get(event, 'Indices'); 
-        gui.shank.selected = index(1);
+        data.shank.active = data.shank.id(event.Indices(1));
         % update sitepos table
         sitepos_update_fcn();
     end
@@ -4069,6 +4071,55 @@ fprintf('Done.\n\n');
              set(gui.probe.key_popup, 'Enable', 'off');
             set(gui.probe.serialnum_edit, 'String', '');
         end        
+    end
+
+% (3.15) SitePos table controls
+
+
+    function sitepos_update_fcn()
+        [data.sitepos.x_pos, data.sitepos.y_pos, data.sitepos.site_num] = ...
+                mysql(sprintf('select x_pos, y_pos, site_num from SitePosition where shank_id = %d;', data.shank.active));
+            
+        set(gui.sitepos.table, 'Data', [data.sitepos.x_pos, data.sitepos.y_pos, data.sitepos.site_num]);
+        set(gui.sitepos.subtitle_text, 'String', sprintf('( Rows: %d )', numel(data.sitepos.x_pos)));
+    end
+
+    function sitepos_add_fcn(src, event)
+        % Adding of sitepos is done via Remapping panel
+    end
+
+    function sitepos_rem_fcn(src, event)
+        % val = get(gui.amplifier.key_popup, 'Value');
+        % id = data.amplifier.id(val);
+        answ = questdlg('Are you sure?', 'Confirm removal', 'Yes', 'No', 'No');
+        if strcmp(answ, 'Yes')
+            msgbox('This feature is not yet implemeted, sorry :(');
+            % delete row
+            % mysql(sprintf('delete from Amplifier where amplifier_id = %d;', id));
+            % update ui / data container
+            % data.amplifier.id(val) = [];
+            % data.amplifier.name(val) = [];
+            % set(gui.amplifier.subtitle_text, ...
+            %     'String', sprintf('( Rows: %d )', length(data.amplifier.id)));
+            % if isempty(data.amplifier.id) % force edit mode
+            %     set(gui.amplifier.name_edit, 'Enable', 'on');
+            %     set(gui.amplifier.key_popup, 'Enable', 'off');s
+            %     set(gui.amplifier.key_cancel_btn, 'Enable', 'on');
+            %     set(gui.amplifier.key_rem_btn, 'Enable', 'off');
+            %     set(gui.amplifier.key_popup, 'String', {'Create new'});
+            %     set(gui.amplifier.key_popup, 'Value', 1);
+            % else
+            %     set(gui.amplifier.key_popup, ...
+            %     'String', keystr_zipper(data.amplifier.name, data.amplifier.id));
+            %    set(gui.amplifier.key_popup, ...
+            %     'Value', length(data.amplifier.id));
+            % end
+            % amplifier_select_fcn(src, event);
+        end
+    end
+
+    function sitepos_cancel_fcn(src, event)
+        % Adding of Reward times is done via Remapping panel
     end
     
 %% (4) helper functions
