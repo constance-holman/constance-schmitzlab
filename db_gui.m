@@ -2960,6 +2960,7 @@ fprintf('Done.\n\n');
         
         % update depending tables
         behavior_update_fcn();
+        reward_update_fcn();
     end
 
     function session_select_fcn(src, event)
@@ -2989,6 +2990,7 @@ fprintf('Done.\n\n');
         
         % update depending tables
         behavior_update_fcn();
+        reward_update_fcn();
     end
 
     function session_add_fcn(src, event)
