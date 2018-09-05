@@ -2367,6 +2367,11 @@ fprintf('Done.\n\n');
         set(gui.experiment.key_rem_btn, 'Enable', popup_state);
         set(gui.experiment.key_cancel_btn, 'Enable', edit_state);
         
+        % update quickselect controls
+        set(gui.quickselect1.experiment_popup, 'String', key_str);
+        set(gui.quickselect1.experiment_popup, 'Value', 1);
+        set(gui.quickselect1.experiment_popup, 'Enable', popup_state);
+        
         % update depending tables
         session_update_fcn();
     end
@@ -2514,7 +2519,7 @@ fprintf('Done.\n\n');
                 sex_val = 3;
             end
             birthdate_str = data.animal.birthdate(1);
-            data.experiment.active = data.animal.id(1);
+            data.animal.active = data.animal.id(1);
         end
         
         set(gui.animal.key_popup, 'Enable', popup_state);
@@ -2531,6 +2536,11 @@ fprintf('Done.\n\n');
         set(gui.animal.key_add_btn, 'Enable', add_state);
         set(gui.animal.key_rem_btn, 'Enable', popup_state);
         set(gui.animal.key_cancel_btn, 'Enable', edit_state);
+        
+        % update quickselect controls
+        set(gui.quickselect1.animal_popup, 'String', key_str);
+        set(gui.quickselect1.animal_popup, 'Value', 1);
+        set(gui.quickselect1.animal_popup, 'Enable', popup_state);
         
         % update depending tables
         virusinjection_update_fcn();
@@ -2943,6 +2953,11 @@ fprintf('Done.\n\n');
         set(gui.session.key_rem_btn, 'Enable', popup_state);
         set(gui.session.key_cancel_btn, 'Enable', edit_state);
         
+        % update quickselect controls
+        set(gui.quickselect1.session_popup, 'String', key_str);
+        set(gui.quickselect1.session_popup, 'Value', 1);
+        set(gui.quickselect1.session_popup, 'Enable', popup_state);
+        
         % update depending tables
         behavior_update_fcn();
     end
@@ -3105,6 +3120,9 @@ fprintf('Done.\n\n');
                 set_visible(gui.probe, 'off');
                 set_visible(gui.sitepos, 'off');
                 set_visible(gui.next2, 'off');
+                
+                % hide project name edit control
+                set(gui.project.name_edit, 'Visible', 'off')
             case 2
                 set_visible(gui.project, 'off');
                 set_visible(gui.experiment, 'off');
