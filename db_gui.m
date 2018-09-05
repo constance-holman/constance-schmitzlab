@@ -2257,6 +2257,14 @@ fprintf('Done.\n\n');
         else
             data.project.active = data.project.id(get(src, 'Value'));
         end
+        
+        % update other project controls
+        if src == gui.project.key_popup
+            set(gui.quickselect1.project_popup, 'Value', get(src, 'Value'));
+        elseif src == gui.quickselect1.project_popup
+            set(gui.project.key_popup, 'Value', get(src, 'Value'));
+        end
+        
         % update depending tables
         experiment_update_fcn();
         animal_update_fcn();
@@ -2387,6 +2395,14 @@ fprintf('Done.\n\n');
             set(gui.experiment.experimenter_edit, 'String', data.experiment.experimenter(val));
             set(gui.experiment.description_edit, 'String', data.experiment.description(val));
         end
+        
+        % update other experiment controls
+        if src == gui.experiment.key_popup
+            set(gui.quickselect1.experiment_popup, 'Value', get(src, 'Value'));
+        elseif src == gui.quickselect1.experiment_popup
+            set(gui.experiment.key_popup, 'Value', get(src, 'Value'));
+        end
+        
         % update depending tables
         session_update_fcn();
     end
@@ -2567,6 +2583,14 @@ fprintf('Done.\n\n');
             set(gui.animal.sex_popup, 'Value', sex_val);
             set(gui.animal.birthdate_edit, 'String', data.animal.birthdate(val));
         end
+        
+        % update other animal controls
+        if src == gui.animal.key_popup
+            set(gui.quickselect1.animal_popup, 'Value', get(src, 'Value'));
+        elseif src == gui.quickselect1.animal_popup
+            set(gui.animal.key_popup, 'Value', get(src, 'Value'));
+        end
+        
         % update depending tables
         virusinjection_update_fcn();
         session_update_fcn();
@@ -2986,6 +3010,13 @@ fprintf('Done.\n\n');
             set(gui.session.type_popup, 'Value', type_val);
             data.session.active = data.session.id(val);
             set(gui.next1.continue_btn, 'Enable', 'on');
+        end
+        
+        % update other session controls
+        if src == gui.session.key_popup
+            set(gui.quickselect1.session_popup, 'Value', get(src, 'Value'));
+        elseif src == gui.quickselect1.session_popup
+            set(gui.session.key_popup, 'Value', get(src, 'Value'));
         end
         
         % update depending tables
