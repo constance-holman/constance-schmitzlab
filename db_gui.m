@@ -4495,7 +4495,7 @@ fprintf('Done.\n\n');
             set(gui.probe.key_popup, 'Enable', 'on');
 
             set(gui.probe.key_popup, ...
-                'String', keystr_zipper(data.probe.id, data.probetype.probe_type));
+                'String', keystr_zipper(data.probe.id, data.probetype.type));
             set(gui.probe.key_popup, ...
                 'Value', length(data.probe.id));
             probe_select_fcn(gui.probe.key_popup, event);
