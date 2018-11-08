@@ -2681,7 +2681,7 @@ fprintf('Done.\n\n');
             'String', dat.types, ...
             'Value', 1, ...
             'TooltipString', 'Select a data type', ...
-            'Callback', @ephys_select_fcn);
+            'Callback', @stimulus_select_fcn);
         ui.electro_table = uitable('Parent', ui.panel, ...
             'ColumnName', {'Time', 'Voltage'}, ...
             'ColumnFormat', {'numeric', 'numeric'}, ...
@@ -2709,7 +2709,7 @@ fprintf('Done.\n\n');
             'Enable', 'off', ...
             'Visible', 'on', ...
             'String', '+', ...
-            'Callback', @ephys_add_fcn, ...
+            'Callback', @stimulus_add_fcn, ...
             'Position', [307.5 90 25 25]);
         ui.key_rem_btn = uicontrol('Parent', ui.panel, ... 
             'Style', 'pushbutton', ...
@@ -2717,7 +2717,7 @@ fprintf('Done.\n\n');
             'Enable', state, ...
             'Visible', 'on', ...
             'String', '-', ...
-            'Callback', @ephys_rem_fcn, ...
+            'Callback', @stimulus_rem_fcn, ...
             'Position', [307.5 60 25 25]);
         ui.key_cancel_btn = uicontrol('Parent', ui.panel, ... 
             'Style', 'pushbutton', ...
@@ -2725,7 +2725,7 @@ fprintf('Done.\n\n');
             'Enable', 'off', ...
             'Visible', 'on', ...
             'String', 'x', ...
-            'Callback', @ephys_cancel_fcn, ...
+            'Callback', @stimulus_cancel_fcn, ...
             'Position', [307.5 30 25 25]);
     end
 
@@ -2873,7 +2873,7 @@ fprintf('Done.\n\n');
             'Enable', button_state, ...
             'Visible', 'on', ...
             'String', '+', ...
-            'Callback', @rdruginjection_add_fcn, ...
+            'Callback', @druginjection_add_fcn, ...
             'Position', [292.5 119 25 25]);
         ui.key_rem_btn = uicontrol('Parent', ui.panel, ... 
             'Style', 'pushbutton', ...
@@ -5123,7 +5123,6 @@ fprintf('Done.\n\n');
 
 % (3.15) SitePos table controls
 
-
     function sitepos_update_fcn()
         [data.sitepos.x_pos, data.sitepos.y_pos, data.sitepos.site_num] = ...
                 mysql(sprintf('select x_pos, y_pos, site_num from SitePosition where shank_id = %d;', data.shank.active));
@@ -5169,7 +5168,87 @@ fprintf('Done.\n\n');
     function sitepos_cancel_fcn(src, event)
         % Adding of Reward times is done via Remapping panel
     end
-    
+
+% (3.16) Recording table controls
+
+    function recording_select_fcn()
+    end
+
+    function recording_add_fcn()
+    end
+
+    function recording_rem_fcn()
+    end
+
+    function recording_cancel_fcn()
+    end
+
+% (3.17) Ephys table controls
+
+    function ephys_select_fcn()
+    end
+
+    function ephys_add_fcn()
+    end
+
+    function ephys_rem_fcn()
+    end
+
+    function ephys_cancel_fcn()
+    end
+
+% (3.18) Stimulus table controls
+
+    function stimulus_select_fcn()
+    end
+
+    function stimulus_add_fcn()
+    end
+
+    function stimulus_rem_fcn()
+    end
+
+    function stimulus_cancel_fcn()
+    end
+
+% (3.19) DrugInjection table controls
+
+    function druginjection_select_fcn()
+    end
+
+    function druginjection_add_fcn()
+    end
+
+    function druginjection_rem_fcn()
+    end
+
+    function druginjection_cancel_fcn()
+    end
+
+% (3.20) Histology table controls
+
+    function histology_select_fcn()
+    end
+
+    function histology_add_fcn()
+    end
+
+    function histology_rem_fcn()
+    end
+
+    function histology_cancel_fcn()
+    end
+
+% (3.21) Anatomy table controls
+
+    function anatomy_add_fcn()
+    end
+
+    function anatomy_rem_fcn()
+    end
+
+    function anatomy_cancel_fcn()
+    end
 %% (4) helper functions
 
     function set_visible(s, mode)
