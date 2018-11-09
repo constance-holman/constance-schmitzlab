@@ -4072,6 +4072,8 @@ fprintf('Done.\n\n');
             gui.page = gui.page + 1;
         elseif strcmp(get(src, 'String'), 'Back')
             gui.page = gui.page - 1;
+        elseif strcmp(get(src, 'String'), 'Quit')
+            % TODO: close gui
         end
         
         switch gui.page
@@ -4178,6 +4180,13 @@ fprintf('Done.\n\n');
                 set_visible(gui.histology, 'on');
                 set_visible(gui.anatomy, 'on');
                 set_visible(gui.next3, 'on');
+                
+                set(gui.quickselect2.session_popup, 'String', get(gui.session.key_popup, 'String'));  
+                set(gui.quickselect2.probe_popup, 'String', get(gui.probe.key_popup, 'String'));
+                set(gui.quickselect2.amplifier_popup, 'String', get(gui.amplifier.key_popup, 'String'));
+                set(gui.quickselect2.session_popup, 'Value', get(gui.session.key_popup, 'Value'));  
+                set(gui.quickselect2.probe_popup, 'Value', get(gui.probe.key_popup, 'Value'));
+                set(gui.quickselect2.amplifier_popup, 'Value', get(gui.amplifier.key_popup, 'Value'));
             otherwise
         end
     end
@@ -5023,7 +5032,7 @@ fprintf('Done.\n\n');
         end
         
         % update depending tables
-        %recording_update_fcn();
+        recording_update_fcn();
     end
 
     function probe_add_fcn(src, event)
@@ -5170,6 +5179,9 @@ fprintf('Done.\n\n');
     end
 
 % (3.16) Recording table controls
+
+    function recording_update_fcn()
+    end
 
     function recording_select_fcn()
     end
