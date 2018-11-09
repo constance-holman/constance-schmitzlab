@@ -3921,6 +3921,9 @@ fprintf('Done.\n\n');
         set(gui.quickselect1.session_popup, 'String', key_str);
         set(gui.quickselect1.session_popup, 'Value', 1);
         set(gui.quickselect1.session_popup, 'Enable', popup_state);
+        set(gui.quickselect2.session_popup, 'String', key_str);
+        set(gui.quickselect2.session_popup, 'Value', 1);
+        set(gui.quickselect2.session_popup, 'Enable', popup_state);
         
         % update depending tables
         behavior_update_fcn();
@@ -5023,8 +5026,13 @@ fprintf('Done.\n\n');
         set(gui.probe.key_rem_btn, 'Enable', popup_state);
         set(gui.probe.key_cancel_btn, 'Enable', 'off');
         
+        % update connected controls
+        set(gui.quickselect2.probe_popup, 'String', key_str);
+        set(gui.quickselect2.probe_popup, 'Value', 1);
+        set(gui.quickselect2.probe_popup, 'Enable', popup_state);
+        
         % update depending tables
-        %recording_update_fcn();
+        recording_update_fcn();
     end
 
     function probe_select_fcn(src, event)
@@ -5035,6 +5043,13 @@ fprintf('Done.\n\n');
             val = get(src, 'Value');
             data.probe.active = data.probe.id(val);
             set(gui.probe.serialnum_edit, 'String', data.probe.serialnum(val));
+        end
+        
+        %  update connected controls
+        if src == gui.probe.key_popup
+            set(gui.quickselect2.probe_popup, 'Value', get(src, 'Value'));
+        elseif src == gui.quickselect2.probe_popup
+            set(gui.probe.key_popup, 'Value', get(src, 'Value'));
         end
         
         % update depending tables
