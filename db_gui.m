@@ -3955,8 +3955,13 @@ fprintf('Done.\n\n');
         % update other session controls
         if src == gui.session.key_popup
             set(gui.quickselect1.session_popup, 'Value', get(src, 'Value'));
+            set(gui.quickselect2.session_popup, 'Value', get(src, 'Value'));
         elseif src == gui.quickselect1.session_popup
             set(gui.session.key_popup, 'Value', get(src, 'Value'));
+            set(gui.quickselect2.session_popup, 'Value', get(src, 'Value'));
+        elseif src == gui.quickselect2.session_popup
+            set(gui.session.key_popup, 'Value', get(src, 'Value'));
+            set(gui.quickselect1.session_popup, 'Value', get(src, 'Value'));
         end
         
         % update depending tables
@@ -4181,6 +4186,7 @@ fprintf('Done.\n\n');
                 set_visible(gui.anatomy, 'on');
                 set_visible(gui.next3, 'on');
                 
+                % update quickselect popup strings
                 set(gui.quickselect2.session_popup, 'String', get(gui.session.key_popup, 'String'));  
                 set(gui.quickselect2.probe_popup, 'String', get(gui.probe.key_popup, 'String'));
                 set(gui.quickselect2.amplifier_popup, 'String', get(gui.amplifier.key_popup, 'String'));
