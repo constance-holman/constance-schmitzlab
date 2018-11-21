@@ -2748,7 +2748,7 @@ fprintf('Done.\n\n');
         dat.type_str = {'IP','IC','SC','IM'};
         dat.active = -1;
         
-        if numel(dat.id) == 0 % empty table
+        if numel(dat.drug) == 0 % empty table
             if recording == -1
                 button_state = 'off';
             else
@@ -2781,7 +2781,7 @@ fprintf('Done.\n\n');
             'Style', 'text', ...
             'Units', 'pixel', ...
             'FontSize', 8, ...
-            'String', sprintf('( Rows: %d )', numel(dat.id)), ...
+            'String', sprintf('( Rows: %d )', numel(dat.drug)), ...
             'Enable', 'on', ...
             'HorizontalAlignment', 'center', ...
             'Visible', 'on', ...
@@ -2791,12 +2791,13 @@ fprintf('Done.\n\n');
             'ColumnFormat', {'char', 'char', 'numeric', 'char'}, ...
             'ColumnWidth', {60, 60, 60, 60}, ...
             'ColumnEditable', [false, false, false, false], ...
-            'Data', [dat.drug, dat.time, dat.volume, dat.type], ...
+            'Data', [dat.drug, num2cell(dat.time), num2cell(dat.volume), dat.type], ...
             'Units', 'pixel', ...
             'Position', [20 15 267.5 141], ...
             'RowName', [], ...
             'Visible', table_state, ...
-            'FontSize', 10);
+            'FontSize', 10, ...
+            'CellSelectionCallback', @druginjection_select_fcn);
         ui.drug_text = uicontrol('Parent', ui.panel, ...
             'Style', 'text', ...
             'Units', 'pixel', ...
@@ -2809,7 +2810,7 @@ fprintf('Done.\n\n');
         ui.drug_edit = uicontrol('Parent', ui.panel, ...
             'Style', 'edit', ...
             'Units', 'pixel', ...
-            'Enable', 'off', ...
+            'Enable', 'on', ...
             'String', '', ...
             'Visible', 'on', ...
             'Position', [70 119 202.5 25]);
@@ -2825,7 +2826,7 @@ fprintf('Done.\n\n');
         ui.time_edit = uicontrol('Parent', ui.panel, ...
             'Style', 'edit', ...
             'Units', 'pixel', ...
-            'Enable', 'off', ...
+            'Enable', 'on', ...
             'String', '', ...
             'Visible', 'on', ...
             'Position', [70 84 202.5 25]);
@@ -2841,7 +2842,7 @@ fprintf('Done.\n\n');
         ui.volume_edit = uicontrol('Parent', ui.panel, ...
             'Style', 'edit', ...
             'Units', 'pixel', ...
-            'Enable', 'off', ...
+            'Enable', 'on', ...
             'String', '', ...
             'Visible', 'on', ...
             'Position', [70 49 202.5 25]);
@@ -2857,14 +2858,13 @@ fprintf('Done.\n\n');
         ui.type_popup = uicontrol('Parent', ui.panel, ...
             'Style', 'popupmenu', ...
             'Units', 'pixel', ...
-            'Enable', 'off', ...
+            'Enable', 'on', ...
             'Visible', 'on', ...
             'Position', [70 35 202.5 4], ...
             'FontSize', 10, ...
             'String', dat.type_str, ...
             'Value', 1, ...
-            'TooltipString', 'Select a recording', ...
-            'Callback', @druginjection_select_fcn);
+            'TooltipString', 'Select a recording');
         ui.key_add_btn = uicontrol('Parent', ui.panel, ... 
             'Style', 'pushbutton', ...
             'Units', 'pixel', ...
@@ -4195,6 +4195,30 @@ fprintf('Done.\n\n');
                 set(gui.quickselect2.session_popup, 'Value', get(gui.session.key_popup, 'Value'));  
                 set(gui.quickselect2.probe_popup, 'Value', get(gui.probe.key_popup, 'Value'));
                 set(gui.quickselect2.amplifier_popup, 'Value', get(gui.amplifier.key_popup, 'Value'));
+                
+                if isempty(data.druginjection.drug)
+                    set(gui.druginjection.table, 'Visible', 'off');
+                    set(gui.druginjection.drug_text, 'Visible', 'on');
+                    set(gui.druginjection.drug_edit, 'Visible', 'on');
+                    set(gui.druginjection.time_text, 'Visible', 'on');
+                    set(gui.druginjection.time_edit, 'Visible', 'on');
+                    set(gui.druginjection.volume_text, 'Visible', 'on');
+                    set(gui.druginjection.volume_edit, 'Visible', 'on');
+                    set(gui.druginjection.type_text, 'Visible', 'on');
+                    set(gui.druginjection.type_popup, 'Visible', 'on');
+                    set(gui.druginjection.key_rem_btn, 'Enable', 'off');
+                else
+                    set(gui.druginjection.table, 'Visible', 'on');
+                    set(gui.druginjection.drug_text, 'Visible', 'off');
+                    set(gui.druginjection.drug_edit, 'Visible', 'off');
+                    set(gui.druginjection.time_text, 'Visible', 'off');
+                    set(gui.druginjection.time_edit, 'Visible', 'off');
+                    set(gui.druginjection.volume_text, 'Visible', 'off');
+                    set(gui.druginjection.volume_edit, 'Visible', 'off');
+                    set(gui.druginjection.type_text, 'Visible', 'off');
+                    set(gui.druginjection.type_popup, 'Visible', 'off');
+                end
+                set(gui.druginjection.key_cancel_btn, 'Enable', 'off');
             otherwise
         end
     end
@@ -5265,6 +5289,8 @@ fprintf('Done.\n\n');
             set(gui.recording.depth_edit, 'String', data.recording.depth(val));
             set(gui.recording.note_edit, 'String', data.recording.note(val));
         end
+        
+        druginjection_update_fcn();
     end
 
     function recording_add_fcn(src, event)
@@ -5381,13 +5407,14 @@ fprintf('Done.\n\n');
 % (3.19) DrugInjection table controls
 
     function druginjection_update_fcn()
-        [data.druginjection.rec_id, data.druginjection.drug, data.druginjection.time, data.druginjection.volume, data.druginjection.type] = ...
-                mysql(sprintf('select rec_id, drug, time, volume, type from DrugInjection where rec_id = %d;', ...
+        [data.druginjection.drug, data.druginjection.time, data.druginjection.volume, data.druginjection.type] = ...
+                mysql(sprintf('select drug, time, volume, type from DrugInjection where rec_id = %d;', ...
                 data.recording.active));
-        if numel(data.druginjection.rec_id) == 0 % empty table
+        if numel(data.druginjection.drug) == 0 % empty table
             table_state = 'off'; % dont show table
             edit_state = 'on'; % show editbox, add and cancel btn
             
+            set(gui.druginjection.table, 'Data', {});
             set(gui.druginjection.drug_edit, 'String', '');
             set(gui.druginjection.time_edit, 'String', '');
             set(gui.druginjection.volume_edit, 'String', '');
@@ -5397,8 +5424,8 @@ fprintf('Done.\n\n');
             edit_state = 'off';
             
             set(gui.druginjection.table, 'Data', ...
-                [data.druginjection.drug, data.druginjection.time, ...
-                data.druginjection.volume, data.druginjection.type]);
+                [data.druginjection.drug, num2cell(data.druginjection.time), ...
+                num2cell(data.druginjection.volume), data.druginjection.type]);
         end
 
         set(gui.druginjection.table, 'Visible', table_state);
@@ -5413,6 +5440,8 @@ fprintf('Done.\n\n');
         set(gui.druginjection.key_add_btn, 'Enable', 'on');
         set(gui.druginjection.key_rem_btn, 'Enable', table_state);
         set(gui.druginjection.key_cancel_btn, 'Enable', 'off');
+        
+        data.druginjection.active = -1;
     end
 
     function druginjection_select_fcn(src, event)
@@ -5431,19 +5460,19 @@ fprintf('Done.\n\n');
             set(gui.druginjection.volume_text, 'Visible', 'on');
             set(gui.druginjection.volume_edit, 'Visible', 'on');
             set(gui.druginjection.type_text, 'Visible', 'on');
+            set(gui.druginjection.type_popup, 'Visible', 'on');
             
             set(gui.druginjection.drug_edit, 'String', '');
             set(gui.druginjection.time_edit, 'String', '');
             set(gui.druginjection.volume_edit, 'String', '');
-            set(gui.druginjection.type_edit, 'String', '');
             
-            set(gui.druginjection.key_rem_btn, 'Enable', 'on');
+            set(gui.druginjection.key_cancel_btn, 'Enable', 'on');
         else
             drug = get(gui.druginjection.drug_edit, 'String');
-            time = get(gui.druginjection.time_edit, 'String');
+            time = str2double(get(gui.druginjection.time_edit, 'String'));
             volume = str2double(get(gui.druginjection.volume_edit, 'String'));
             type_val = get(gui.druginjection.type_popup, 'Value');
-            type = gui.druginjection.type_str(type_val);
+            type = data.druginjection.type_str{type_val};
             
             % insert to database
             insert_druginjection(data.recording.active, drug, time, 'Volume', volume, 'Type', type);
@@ -5460,58 +5489,92 @@ fprintf('Done.\n\n');
             set(gui.druginjection.subtitle_text, ...
                 'String', sprintf('( Rows: %d )', length(data.druginjection.drug)));
             
+            set(gui.druginjection.table, 'Data', ...
+                [data.druginjection.drug, num2cell(data.druginjection.time), ...
+                num2cell(data.druginjection.volume), data.druginjection.type]);
+            
+            set(gui.druginjection.table, 'Visible', 'on');
+            set(gui.druginjection.drug_text, 'Visible', 'off');
+            set(gui.druginjection.drug_edit, 'Visible', 'off');
+            set(gui.druginjection.time_text, 'Visible', 'off');
+            set(gui.druginjection.time_edit, 'Visible', 'off');
+            set(gui.druginjection.volume_text, 'Visible', 'off');
+            set(gui.druginjection.volume_edit, 'Visible', 'off');
+            set(gui.druginjection.type_text, 'Visible', 'off');
+            set(gui.druginjection.type_popup, 'Visible', 'off');
+            
             set(gui.druginjection.key_rem_btn, 'Enable', 'on');
             set(gui.druginjection.key_cancel_btn, 'Enable', 'off');
         end
-        
+        data.druginjection.active = -1;
     end
 
     function druginjection_rem_fcn(src, event)
         val = data.druginjection.active;
+        if val == -1
+            return
+        end
         answ = questdlg('Are you sure?', 'Confirm removal', 'Yes', 'No', 'No');
         if strcmp(answ, 'Yes')
             % delete row
-            mysql(sprintf('delete from DrugInjection where rec_id = %d and drug = %s and time = %s and volume = %d and type = %s;', ...
-                data.recording.active, data.druginjection.drug(val), data.druginjection.time(val), data.druginjection.volume(val), data.druginjection.type(val)));
+            mysql(sprintf('delete from DrugInjection where rec_id = %d and drug = "%s" and time = %d and volume = %d and type = "%s";', ...
+                data.recording.active, data.druginjection.drug{val}, data.druginjection.time(val), data.druginjection.volume(val), data.druginjection.type{val}));
             % update ui / data container
-            data.recording.id(val) = [];
-            data.recording.depth(val) = [];
-            data.recording.note(val) = [];
-            set(gui.recording.subtitle_text, ...
-                'String', sprintf('( Rows: %d )', length(data.recording.id)));
-            if isempty(data.recording.id) % force edit mode
-                set(gui.recording.depth_edit, 'Enable', 'on');
-                set(gui.recording.note_edit, 'Enable', 'on');
-                set(gui.recording.key_popup, 'Enable', 'off');
-                set(gui.recording.key_cancel_btn, 'Enable', 'on');
-                set(gui.recording.key_rem_btn, 'Enable', 'off');
-                set(gui.recording.key_popup, 'String', {'Create new'});
-                set(gui.recording.key_popup, 'Value', 1);
+            data.druginjection.drug(val) = [];
+            data.druginjection.time(val) = [];
+            data.druginjection.volume(val) = [];
+            data.druginjection.type(val) = [];
+            set(gui.druginjection.subtitle_text, ...
+                'String', sprintf('( Rows: %d )', length(data.druginjection.drug)));
+            if isempty(data.druginjection.drug) % force edit mode
+                set(gui.druginjection.table, 'Visible', 'off');
+                set(gui.druginjection.drug_text, 'Visible', 'on');
+                set(gui.druginjection.drug_edit, 'Visible', 'on');
+                set(gui.druginjection.time_text, 'Visible', 'on');
+                set(gui.druginjection.time_edit, 'Visible', 'on');
+                set(gui.druginjection.volume_text, 'Visible', 'on');
+                set(gui.druginjection.volume_edit, 'Visible', 'on');
+                set(gui.druginjection.type_text, 'Visible', 'on');
+                set(gui.druginjection.key_rem_btn, 'Enable', 'off');
+                set(gui.druginjection.type_popup, 'Visible', 'on');
             else
-                set(gui.recording.key_popup, ...
-                'String', keystr_zipper(data.recording.note, data.recording.id));
-                set(gui.recording.key_popup, ...
-                'Value', length(data.recording.id));
+                set(gui.druginjection.table, 'Data', ...
+                    [data.druginjection.drug, num2cell(data.druginjection.time), ...
+                    num2cell(data.druginjection.volume), data.druginjection.type]);
             end
         end
+        data.druginjection.active = -1;
     end
 
     function druginjection_cancel_fcn(src, event)
-        if ~isempty(data.recording.id)
-            set(gui.recording.depth_edit, 'Enable', 'off');
-            set(gui.recording.note_edit, 'Enable', 'off');
-            set(gui.recording.key_popup, 'Enable', 'on');
-            set(gui.recording.key_rem_btn, 'Enable', 'on');
+        if ~isempty(data.druginjection.drug)
+            set(gui.druginjection.table, 'Visible', 'on');
+            set(gui.druginjection.drug_text, 'Visible', 'off');
+            set(gui.druginjection.drug_edit, 'Visible', 'off');
+            set(gui.druginjection.time_text, 'Visible', 'off');
+            set(gui.druginjection.time_edit, 'Visible', 'off');
+            set(gui.druginjection.volume_text, 'Visible', 'off');
+            set(gui.druginjection.volume_edit, 'Visible', 'off');
+            set(gui.druginjection.type_text, 'Visible', 'off');
+            set(gui.druginjection.type_popup, 'Visible', 'off');
             set(src, 'Enable', 'off');
-            set(gui.recording.key_popup, ...
-                'String', keystr_zipper(data.recording.note, data.recording.id));
-            set(gui.recording.key_popup, ...
-                'Value', length(data.recording.id));
-            recording_select_fcn(src, event);
         else
-            set(gui.recording.depth_edit, 'String', '');
-            set(gui.recording.note_edit, 'String', '');
+            set(gui.druginjection.table, 'Visible', 'off');
+            set(gui.druginjection.drug_text, 'Visible', 'on');
+            set(gui.druginjection.drug_edit, 'Visible', 'on');
+            set(gui.druginjection.time_text, 'Visible', 'on');
+            set(gui.druginjection.time_edit, 'Visible', 'on');
+            set(gui.druginjection.volume_text, 'Visible', 'on');
+            set(gui.druginjection.volume_edit, 'Visible', 'on');
+            set(gui.druginjection.type_text, 'Visible', 'on');
+            set(gui.druginjection.key_rem_btn, 'Enable', 'off');
+            set(gui.druginjection.type_popup, 'Visible', 'on');
+            set(gui.druginjection.drug_edit, 'String', '');
+            set(gui.druginjection.time_edit, 'String', '');
+            set(gui.druginjection.volume_edit, 'String', '');
+            set(gui.druginjection.type_edit, 'String', '');
         end
+        data.druginjection.active = -1;
     end
 
 
