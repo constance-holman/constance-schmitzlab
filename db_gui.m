@@ -2735,18 +2735,18 @@ fprintf('Done.\n\n');
         ui = struct(); % struct with ui handles
         dat = struct(); % struct with table data
         try
-            [dat.id, dat.drug, dat.time, dat.volume, dat.type] = ...
-                mysql(sprintf('select rec_id, drug, time, volume, type from DrugInjection where rec_id=%d;', ...
+            [dat.drug, dat.time, dat.volume, dat.type] = ...
+                mysql(sprintf('select drug, time, volume, type from DrugInjection where rec_id=%d;', ...
                 recording));
         catch err
-            dat.id = [];
-            dat.drug= {''};
-            dat.time= {''};
-            dat.volume= {''};
+            dat.drug = {''};
+            dat.time = {''};
+            dat.volume = [];
             dat.type = {''};
         end
         
-        type_str = {'IP','IC','SC','IM'};
+        dat.type_str = {'IP','IC','SC','IM'};
+        dat.active = -1;
         
         if numel(dat.id) == 0 % empty table
             if recording == -1
@@ -2754,12 +2754,10 @@ fprintf('Done.\n\n');
             else
                 button_state = 'on';
             end
-            dat.active = -1;
             table_state = 'off';
         else % populated table
             button_state = 'on';
             table_state = 'on';
-            dat.active = dat.id(1);
         end
         
         % draw ui controls
@@ -2863,7 +2861,7 @@ fprintf('Done.\n\n');
             'Visible', 'on', ...
             'Position', [70 35 202.5 4], ...
             'FontSize', 10, ...
-            'String', type_str, ...
+            'String', dat.type_str, ...
             'Value', 1, ...
             'TooltipString', 'Select a recording', ...
             'Callback', @druginjection_select_fcn);
@@ -5251,7 +5249,7 @@ fprintf('Done.\n\n');
         % update depending tables
         %ephys_update_fcn();
         %stimulus_update_fcn();
-        %druginjection_update_fcn();
+        druginjection_update_fcn();
         %histology_update_fcn();
     end
 
@@ -5382,17 +5380,140 @@ fprintf('Done.\n\n');
 
 % (3.19) DrugInjection table controls
 
-    function druginjection_select_fcn()
+    function druginjection_update_fcn()
+        [data.druginjection.rec_id, data.druginjection.drug, data.druginjection.time, data.druginjection.volume, data.druginjection.type] = ...
+                mysql(sprintf('select rec_id, drug, time, volume, type from DrugInjection where rec_id = %d;', ...
+                data.recording.active));
+        if numel(data.druginjection.rec_id) == 0 % empty table
+            table_state = 'off'; % dont show table
+            edit_state = 'on'; % show editbox, add and cancel btn
+            
+            set(gui.druginjection.drug_edit, 'String', '');
+            set(gui.druginjection.time_edit, 'String', '');
+            set(gui.druginjection.volume_edit, 'String', '');
+            set(gui.druginjection.type_edit, 'String', '');
+        else % populated table
+            table_state = 'on';
+            edit_state = 'off';
+            
+            set(gui.druginjection.table, 'Data', ...
+                [data.druginjection.drug, data.druginjection.time, ...
+                data.druginjection.volume, data.druginjection.type]);
+        end
+
+        set(gui.druginjection.table, 'Visible', table_state);
+        set(gui.druginjection.drug_text, 'Visible', edit_state);
+        set(gui.druginjection.drug_edit, 'Visible', edit_state);
+        set(gui.druginjection.time_text, 'Visible', edit_state);
+        set(gui.druginjection.time_edit, 'Visible', edit_state);
+        set(gui.druginjection.volume_text, 'Visible', edit_state);
+        set(gui.druginjection.volume_edit, 'Visible', edit_state);
+        set(gui.druginjection.type_text, 'Visible', edit_state);
+        
+        set(gui.druginjection.key_add_btn, 'Enable', 'on');
+        set(gui.druginjection.key_rem_btn, 'Enable', table_state);
+        set(gui.druginjection.key_cancel_btn, 'Enable', 'off');
     end
 
-    function druginjection_add_fcn()
+    function druginjection_select_fcn(src, event)
+        % get selection index
+        data.druginjection.active = event.Indices(1);
     end
 
-    function druginjection_rem_fcn()
+    function druginjection_add_fcn(src, event)
+        if strcmp(get(gui.druginjection.table, 'Visible'), 'on') % table visible
+
+            set(gui.druginjection.table, 'Visible', 'off');
+            set(gui.druginjection.drug_text, 'Visible', 'on');
+            set(gui.druginjection.drug_edit, 'Visible', 'on');
+            set(gui.druginjection.time_text, 'Visible', 'on');
+            set(gui.druginjection.time_edit, 'Visible', 'on');
+            set(gui.druginjection.volume_text, 'Visible', 'on');
+            set(gui.druginjection.volume_edit, 'Visible', 'on');
+            set(gui.druginjection.type_text, 'Visible', 'on');
+            
+            set(gui.druginjection.drug_edit, 'String', '');
+            set(gui.druginjection.time_edit, 'String', '');
+            set(gui.druginjection.volume_edit, 'String', '');
+            set(gui.druginjection.type_edit, 'String', '');
+            
+            set(gui.druginjection.key_rem_btn, 'Enable', 'on');
+        else
+            drug = get(gui.druginjection.drug_edit, 'String');
+            time = get(gui.druginjection.time_edit, 'String');
+            volume = str2double(get(gui.druginjection.volume_edit, 'String'));
+            type_val = get(gui.druginjection.type_popup, 'Value');
+            type = gui.druginjection.type_str(type_val);
+            
+            % insert to database
+            insert_druginjection(data.recording.active, drug, time, 'Volume', volume, 'Type', type);
+            
+            if isempty(drug); drug = {''}; end
+            data.druginjection.drug = [data.druginjection.drug; drug];
+            if isempty(time); time = {''}; end
+            data.druginjection.time = [data.druginjection.time; time];
+            if isempty(volume); volume = []; end
+            data.druginjection.volume = [data.druginjection.volume; volume];
+            if isempty(type); type = {''}; end
+            data.druginjection.type = [data.druginjection.type; type];
+            
+            set(gui.druginjection.subtitle_text, ...
+                'String', sprintf('( Rows: %d )', length(data.druginjection.drug)));
+            
+            set(gui.druginjection.key_rem_btn, 'Enable', 'on');
+            set(gui.druginjection.key_cancel_btn, 'Enable', 'off');
+        end
+        
     end
 
-    function druginjection_cancel_fcn()
+    function druginjection_rem_fcn(src, event)
+        val = data.druginjection.active;
+        answ = questdlg('Are you sure?', 'Confirm removal', 'Yes', 'No', 'No');
+        if strcmp(answ, 'Yes')
+            % delete row
+            mysql(sprintf('delete from DrugInjection where rec_id = %d and drug = %s and time = %s and volume = %d and type = %s;', ...
+                data.recording.active, data.druginjection.drug(val), data.druginjection.time(val), data.druginjection.volume(val), data.druginjection.type(val)));
+            % update ui / data container
+            data.recording.id(val) = [];
+            data.recording.depth(val) = [];
+            data.recording.note(val) = [];
+            set(gui.recording.subtitle_text, ...
+                'String', sprintf('( Rows: %d )', length(data.recording.id)));
+            if isempty(data.recording.id) % force edit mode
+                set(gui.recording.depth_edit, 'Enable', 'on');
+                set(gui.recording.note_edit, 'Enable', 'on');
+                set(gui.recording.key_popup, 'Enable', 'off');
+                set(gui.recording.key_cancel_btn, 'Enable', 'on');
+                set(gui.recording.key_rem_btn, 'Enable', 'off');
+                set(gui.recording.key_popup, 'String', {'Create new'});
+                set(gui.recording.key_popup, 'Value', 1);
+            else
+                set(gui.recording.key_popup, ...
+                'String', keystr_zipper(data.recording.note, data.recording.id));
+                set(gui.recording.key_popup, ...
+                'Value', length(data.recording.id));
+            end
+        end
     end
+
+    function druginjection_cancel_fcn(src, event)
+        if ~isempty(data.recording.id)
+            set(gui.recording.depth_edit, 'Enable', 'off');
+            set(gui.recording.note_edit, 'Enable', 'off');
+            set(gui.recording.key_popup, 'Enable', 'on');
+            set(gui.recording.key_rem_btn, 'Enable', 'on');
+            set(src, 'Enable', 'off');
+            set(gui.recording.key_popup, ...
+                'String', keystr_zipper(data.recording.note, data.recording.id));
+            set(gui.recording.key_popup, ...
+                'Value', length(data.recording.id));
+            recording_select_fcn(src, event);
+        else
+            set(gui.recording.depth_edit, 'String', '');
+            set(gui.recording.note_edit, 'String', '');
+        end
+    end
+
 
 % (3.20) Histology table controls
 
