@@ -3970,6 +3970,7 @@ fprintf('Done.\n\n');
         % update depending tables
         behavior_update_fcn();
         reward_update_fcn();
+        recording_update_fcn();
     end
 
     function session_add_fcn(src, event)
@@ -4657,8 +4658,14 @@ fprintf('Done.\n\n');
         set(gui.amplifier.key_rem_btn, 'Enable', popup_state);
         set(gui.amplifier.key_cancel_btn, 'Enable', edit_state);
         
+        % update quickselect controls
+        set(gui.quickselect2.amplifier_popup, 'String', key_str);
+        set(gui.quickselect2.amplifier_popup, 'Value', 1);
+        set(gui.quickselect2.amplifier_popup, 'Enable', popup_state);
+        
         % update depending tables
         remapping_update_fcn();
+        recording_update_fcn();
     end
 
     function amplifier_select_fcn(src, event)
@@ -4671,8 +4678,15 @@ fprintf('Done.\n\n');
             set(gui.amplifier.name_edit, 'String', data.amplifier.name(val));
         end
         
+        if src == gui.amplifier.key_popup
+            set(gui.quickselect2.amplifier_popup, 'Value', get(src, 'Value'));
+        elseif src == gui.quickselect2.amplifier_popup
+            set(gui.amplifier.key_popup, 'Value', get(src, 'Value'));
+        end
+        
         % update depending tables
         remapping_update_fcn();
+        recording_update_fcn();
     end
 
     function amplifier_add_fcn(src, event)
@@ -5202,18 +5216,140 @@ fprintf('Done.\n\n');
 % (3.16) Recording table controls
 
     function recording_update_fcn()
+        [data.recording.id, data.recording.session_id, data.recording.probe_id, data.recording.amplifier_id, data.recording.depth, data.recording.note] = ...
+                mysql(sprintf('select rec_id, session_id, probe_id, amplifier_id, depth, note from Recording where session_id = %d and probe_id = %d and amplifier_id = %d;', ...
+                data.session.active, data.probe.active, data.amplifier.active));
+        if numel(data.recording.id) == 0 % empty table
+            popup_state = 'off';
+            edit_state = 'on'; % show editbox, add and cancel btn
+            add_state = 'on';
+            key_str = {'Create new'};
+            depth_str = '';
+            note_str = '';
+            data.recording.active = -1;
+        else % populated table
+            popup_state = 'on'; % show key select popup
+            edit_state = 'off';
+            add_state = 'on';
+            key_str = keystr_zipper(data.recording.note, data.recording.id);
+            depth_str = data.recording.depth(1);
+            note_str = data.recording.note(1);
+            data.recording.active = data.recording.id(1);
+        end
+        
+        set(gui.recording.key_popup, 'Enable', popup_state);
+        set(gui.recording.key_popup, 'String', key_str);
+        set(gui.recording.key_popup, 'Value', 1);
+        set(gui.recording.depth_edit, 'Enable', edit_state);
+        set(gui.recording.depth_edit, 'String', depth_str);
+        set(gui.recording.note_edit, 'Enable', edit_state);
+        set(gui.recording.note_edit, 'String', note_str);
+        set(gui.recording.key_add_btn, 'Enable', add_state);
+        set(gui.recording.key_rem_btn, 'Enable', popup_state);
+        set(gui.recording.key_cancel_btn, 'Enable', edit_state);
+        
+        % update depending tables
+        %ephys_update_fcn();
+        %stimulus_update_fcn();
+        %druginjection_update_fcn();
+        %histology_update_fcn();
     end
 
-    function recording_select_fcn()
+    function recording_select_fcn(src, event)
+        if isempty(data.recording.id)
+            data.recording.active = -1;
+            set(gui.recording.name_edit, 'String', '');
+            set(gui.recording.type_edit, 'String', '');
+            set(gui.recording.note_edit, 'String', '');
+        else
+            val = get(src, 'Value');
+            data.recording.active = data.recording.id(val);
+            set(gui.recording.depth_edit, 'String', data.recording.depth(val));
+            set(gui.recording.note_edit, 'String', data.recording.note(val));
+        end
     end
 
-    function recording_add_fcn()
+    function recording_add_fcn(src, event)
+        if strcmp(get(gui.recording.key_popup, 'Enable'), 'on')
+            popup_state = 'off';
+            edit_state = 'on';
+            set(gui.recording.depth_edit, 'String', '');
+            set(gui.recording.note_edit, 'String', '');
+            set(gui.recording.key_popup, 'String', {'Create new'});
+            set(gui.recording.key_popup, 'Value', 1);
+        elseif strcmp(get(gui.recording.depth_edit, 'Enable'), 'on')
+            depth = str2double(get(gui.recording.depth_edit, 'String'));
+            note = get(gui.recording.note_edit, 'String');
+            data.recording.id = [data.recording.id; ...
+                insert_recording(data.session.active, data.probe.active, data.amplifier.active, depth, 'Note', note, 'Verbose', true)];
+            if isempty(depth); depth = {''}; end
+            data.recording.depth = [data.recording.depth; depth];
+            if isempty(note); note = {''}; end
+            data.recording.note = [data.recording.note; note];
+            set(gui.recording.subtitle_text, ...
+                'String', sprintf('( Rows: %d )', length(data.recording.id)));
+            set(gui.recording.key_popup, ...
+                'String', keystr_zipper(data.recording.note, data.recording.id));
+            set(gui.recording.key_popup, ...
+                'Value', length(data.recording.id));
+            recording_select_fcn(src, event); % trigger select callback
+            popup_state = 'on';
+            edit_state = 'off';
+        end
+        set(gui.recording.depth_edit, 'Enable', edit_state);
+        set(gui.recording.note_edit, 'Enable', edit_state);
+        set(gui.recording.key_popup, 'Enable', popup_state);
+        set(gui.recording.key_cancel_btn, 'Enable', edit_state);
+        set(gui.recording.key_rem_btn, 'Enable', popup_state);
     end
 
-    function recording_rem_fcn()
+    function recording_rem_fcn(src, event)
+        val = get(gui.recording.key_popup, 'Value');
+        id = data.recording.id(val);
+        answ = questdlg('Are you sure?', 'Confirm removal', 'Yes', 'No', 'No');
+        if strcmp(answ, 'Yes')
+            % delete row
+            mysql(sprintf('delete from Recording where rec_id = %d;', id));
+            % update ui / data container
+            data.recording.id(val) = [];
+            data.recording.depth(val) = [];
+            data.recording.note(val) = [];
+            set(gui.recording.subtitle_text, ...
+                'String', sprintf('( Rows: %d )', length(data.recording.id)));
+            if isempty(data.recording.id) % force edit mode
+                set(gui.recording.depth_edit, 'Enable', 'on');
+                set(gui.recording.note_edit, 'Enable', 'on');
+                set(gui.recording.key_popup, 'Enable', 'off');
+                set(gui.recording.key_cancel_btn, 'Enable', 'on');
+                set(gui.recording.key_rem_btn, 'Enable', 'off');
+                set(gui.recording.key_popup, 'String', {'Create new'});
+                set(gui.recording.key_popup, 'Value', 1);
+            else
+                set(gui.recording.key_popup, ...
+                'String', keystr_zipper(data.recording.note, data.recording.id));
+                set(gui.recording.key_popup, ...
+                'Value', length(data.recording.id));
+            end
+            recording_select_fcn(src, event);
+        end
     end
 
-    function recording_cancel_fcn()
+    function recording_cancel_fcn(src, event)
+        if ~isempty(data.recording.id)
+            set(gui.recording.depth_edit, 'Enable', 'off');
+            set(gui.recording.note_edit, 'Enable', 'off');
+            set(gui.recording.key_popup, 'Enable', 'on');
+            set(gui.recording.key_rem_btn, 'Enable', 'on');
+            set(src, 'Enable', 'off');
+            set(gui.recording.key_popup, ...
+                'String', keystr_zipper(data.recording.note, data.recording.id));
+            set(gui.recording.key_popup, ...
+                'Value', length(data.recording.id));
+            recording_select_fcn(src, event);
+        else
+            set(gui.recording.depth_edit, 'String', '');
+            set(gui.recording.note_edit, 'String', '');
+        end
     end
 
 % (3.17) Ephys table controls
