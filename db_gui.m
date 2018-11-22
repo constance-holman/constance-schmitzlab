@@ -3113,7 +3113,7 @@ fprintf('Done.\n\n');
         ui.file_edit = uicontrol('Parent', ui.panel, ...
             'Style', 'edit', ...
             'Units', 'pixel', ...
-            'Enable', 'on', ...
+            'Enable', 'off', ...
             'Visible', 'on', ...
             'Position', [85 15 202.5 22.5]);
         ui.file_btn = uicontrol('Parent', ui.panel, ... 
@@ -3122,7 +3122,7 @@ fprintf('Done.\n\n');
             'Enable', 'on', ...
             'Visible', 'on', ...
             'String', 'Select', ...
-            'Callback', @anatomy_update_fcn, ...
+            'Callback', @anatomy_select_fcn, ...
             'Position', [297.5 15 45 22.5]);
         ui.key_add_btn = uicontrol('Parent', ui.panel, ... 
             'Style', 'pushbutton', ...
@@ -4360,13 +4360,13 @@ fprintf('Done.\n\n');
             state = 'off'; % show editbox, add and cancel btn
         else % populated table
             state = 'on';
+            
+            set(gui.remapping.table, 'Data', ...
+                [data.remapping.probe_channel, ...
+                data.remapping.connector_channel, ...
+                data.remapping.headstage_channel]);
         end
-        
-        set(gui.remapping.table, 'Data', ...
-            [data.remapping.probe_channel, ...
-            data.remapping.connector_channel, ...
-            data.remapping.headstage_channel]);
-        
+
         set(gui.remapping.file_edit, 'Enable', 'off');
         set(gui.remapping.file_btn, 'Enable', 'on');
         set(gui.behavior.table, 'Enable', state);
@@ -4401,7 +4401,7 @@ fprintf('Done.\n\n');
             set(gui.remapping.file_edit, 'String', '');
             set(gui.remapping.file_edit, 'Enable', 'off');
             set(gui.remapping.key_add_btn, 'Enable', 'off');
-            error('Unable to locate %s', posf)
+            error('Unable to locate %s', remapf)
         end
         
         % extract metadata
@@ -5619,7 +5619,7 @@ fprintf('Done.\n\n');
         set(gui.histology.key_cancel_btn, 'Enable', edit_state);
         
         % update depending tables
-        % anatomy_update_fcn();
+        anatomy_update_fcn();
     end
 
     function histology_select_fcn(src, event)
@@ -5635,6 +5635,9 @@ fprintf('Done.\n\n');
             set(gui.histology.staining_edit, 'String', data.histology.staining(val));
             set(gui.histology.note_edit, 'String', data.histology.note(val));
         end
+        
+        % update depending tables
+        anatomy_update_fcn();
     end
 
     function histology_add_fcn(src, event)
@@ -5732,13 +5735,146 @@ fprintf('Done.\n\n');
 
 % (3.21) Anatomy table controls
 
-    function anatomy_add_fcn()
+    function anatomy_update_fcn()
+       [data.anatomy.score, data.anatomy.location, data.anatomy.channel] = ...
+                mysql(sprintf('select score, location, channel from Anatomy where histology_id = %d;', ...
+                data.histology.active));
+        if numel(data.remapping.probe_channel) == 0 % empty table
+            state = 'off'; % show add and cancel btn
+        else % populated table
+            state = 'on';
+            set(gui.anatomy.table, 'Data', ...
+                [data.anatomy.score, ...
+                data.anatomy.location, ...
+                data.anatomy.channel]);
+        end
+        
+        set(gui.remapping.file_edit, 'Enable', 'off');
+        set(gui.remapping.file_btn, 'Enable', 'on');
+        set(gui.behavior.table, 'Enable', state);
+        set(gui.behavior.key_rem_btn, 'Enable', state);
+        set(gui.behavior.key_add_btn, 'Enable', 'off');
+        set(gui.behavior.key_cancel_btn, 'Enable', 'off');
     end
 
-    function anatomy_rem_fcn()
+    function anatomy_select_fcn(src, event)
+            [fname, fpath] = uigetfile('*', 'Pick an anatomy file.');
+            if isnumeric(fname) % selection canceled
+                set(gui.anatomy.file_edit, 'Enable', 'off');
+                set(gui.anatomy.file_edit, 'String', '');
+                set(gui.anatomy.key_add_btn, 'Enable', 'off');
+                set(gui.anatomy.key_cancel_btn, 'Enable', 'off');
+                return
+            end
+            anatomyf = fullfile(fpath, fname);
+            if exist(anatomyf, 'file') ~= 2; error('Unable to locate %s', fname); end
+            set(gui.anatomy.file_edit, 'String', anatomyf);
+            set(gui.anatomy.key_add_btn, 'Enable', 'on');
+            set(gui.anatomy.key_cancel_btn, 'Enable', 'on');
     end
 
-    function anatomy_cancel_fcn()
+    function anatomy_add_fcn(src, event)
+        anatomyf = get(gui.remapping.file_edit, 'String');
+        if isempty(anatomyf)
+            set(gui.anatomy.key_add_btn, 'Enable', 'off');
+            return
+        end
+        if exist(anatomyf, 'file') ~= 2
+            set(gui.anatomy.file_edit, 'String', '');
+            set(gui.anatomy.file_edit, 'Enable', 'off');
+            set(gui.anatomy.key_add_btn, 'Enable', 'off');
+            error('Unable to locate %s', anatomyf)
+        end
+        
+        % extract metadata
+        [~, fname, ext] = fileparts(anatomyf);
+%         finfo = regexp(fname, 'ProbeRemapping_(?<brand>\w+)_(?<type>\w+)_(?<amp>\w+)', 'names');
+%         if isempty(finfo) || ~strcmpi(ext, '.csv')
+%             error('No matching ProbeRemapping_$brand_$type_$amp.csv file found.')
+%         end
+%         amp = finfo.amp;
+%         type = [finfo.brand, '_', finfo.type];
+%         
+%         % check if metadata is present in database
+%         amplifier_id = mysql(sprintf('select amplifier_id from Amplifier where name = "%s"', amp));
+%         if isempty(amplifier_id)
+%             uin = input('Unknown Amplifier "%s". Insert new row? [Y]es, [n]o: ', 's');
+%             if isempty(uin) || any(strcmpi(uin, {'y, yes'}))
+%                 amplifier_id = insert_amplifier(amp, 'Verbose', true);
+%             else
+%                 fprintf('\nOkay, bye.\n')
+%                 return;
+%             end
+%         end
+%         
+%         probe_type_id = mysql(sprintf('select probe_type_id from ProbeType where type = "%s"', type));
+%         if isempty(probe_type_id)
+%             uin = input('Unknown ProbeType "%s". Insert new row? [Y]es, [n]o: ', 's');
+%             if isempty(uin) || any(strcmpi(uin, {'y, yes'}))
+%                 probe_type_id = insert_probetype(type, 'Verbose', true);
+%             else
+%                 fprintf('\nOkay, bye.\n')
+%                 return;
+%             end
+%         end
+%         
+%         if logical(mysql(sprintf( ...
+%             'select count(1) from Remapping where amplifier_id=%d and probe_type_id=%d', ...
+%             amplifier_id, probe_type_id)))
+%             uin = input('Remapping already in database! [R]eplace, [s]kip: ', 's');
+%             if isempty(uin) || any(strcmpi(uin, {'r', 'replace'}))
+%                 % drop values from db
+%                 mysql(sprintf('delete from Remapping where amplifier_id=%d and probe_type_id=%d', ...
+%                     amplifier_id, probe_type_id));
+%             else
+%                 fprintf('\nOkay, bye.\n')
+%                 return;
+%             end
+%         end
+%         
+%         % import remap data
+%         [shank, probechan, connectorchan, headstagechan, x, y] = import_remapping(anatomyf);
+%         
+%         % insert remap table
+%         insert_remapping(probe_type_id, amplifier_id, ...
+%             'Probe', probechan, 'Headstage', headstagechan, 'Connector', connectorchan, ...
+%             'Verbose', true);
+%         
+%         % insert shank and sitepos
+%         ushank = unique(shank);
+%         for j = 1:numel(ushank)
+%             num_sites = sum(shank == ushank(j));
+%             shank_key = [type, '_', num2str(j)];
+%             shank_id = insert_shank(probe_type_id, ...
+%                 'Sites', num_sites, 'Verbose', true);
+%             x(isnan(x)) = 0;
+%             y(isnan(y)) = 0;
+%             insert_sitepos(shank_id, [x,y], [1:numel(probechan)]', 'Verbose', true);
+%         end
+%         
+%         remapping_update_fcn();
+%         amplifier_update_fcn();
+%         probetype_update_fcn();
+%         shank_update_fcn();
+%         sitepos_update_fcn();
+%         
+%         set(gui.remapping.file_edit, 'String', '');
+%         set(gui.remapping.file_edit, 'Enable', 'off');
+%         set(gui.remapping.key_add_btn, 'Enable', 'off');
+%         set(gui.remapping.key_cancel_btn, 'Enable', 'off');
+    end
+
+    function anatomy_rem_fcn(src, event)
+        % TODO: Get uitable cell selection
+        % TODO: Drop selected rows from table
+        anatomy_update_fcn();
+    end
+
+    function anatomy_cancel_fcn(src, event)
+        set(gui.anatomy.file_edit, 'String', '');
+        set(gui.anatomy.file_btn, 'Enable', 'on');
+        set(gui.anatomy.key_add_btn, 'Enable', 'off');
+        set(gui.anatomy.key_cancel_btn, 'Enable', 'off');
     end
 %% (4) helper functions
 
