@@ -5418,7 +5418,6 @@ fprintf('Done.\n\n');
             set(gui.druginjection.drug_edit, 'String', '');
             set(gui.druginjection.time_edit, 'String', '');
             set(gui.druginjection.volume_edit, 'String', '');
-            set(gui.druginjection.type_edit, 'String', '');
         else % populated table
             table_state = 'on';
             edit_state = 'off';
@@ -5436,6 +5435,7 @@ fprintf('Done.\n\n');
         set(gui.druginjection.volume_text, 'Visible', edit_state);
         set(gui.druginjection.volume_edit, 'Visible', edit_state);
         set(gui.druginjection.type_text, 'Visible', edit_state);
+        set(gui.druginjection.type_popup, 'Visible', edit_state);
         
         set(gui.druginjection.key_add_btn, 'Enable', 'on');
         set(gui.druginjection.key_rem_btn, 'Enable', table_state);
