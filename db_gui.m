@@ -2897,12 +2897,11 @@ fprintf('Done.\n\n');
         ui = struct(); % struct with ui handles
         dat = struct(); % struct with table data
         try
-            [dat.id, dat.rec_id, dat.dye, dat.staining, dat.note] = ...
-                mysql(sprintf('select histology_id, rec_id, dye, staining, note from Histology where rec_id = %d;', ...
+            [dat.id, dat.dye, dat.staining, dat.note] = ...
+                mysql(sprintf('select histology_id, dye, staining, note from Histology where rec_id = %d;', ...
                 recording));
         catch err
             dat.id = [];
-            dat.rec_id = {''};
             dat.dye = {''};
             dat.staining = {''};
             dat.note = {''};
@@ -3023,7 +3022,7 @@ fprintf('Done.\n\n');
         ui.key_add_btn = uicontrol('Parent', ui.panel, ... 
             'Style', 'pushbutton', ...
             'Units', 'pixel', ...
-            'Enable', popup_state, ...
+            'Enable', 'on', ...
             'Visible', 'on', ...
             'String', '+', ...
             'Callback', @histology_add_fcn, ...
@@ -3039,7 +3038,7 @@ fprintf('Done.\n\n');
         ui.key_cancel_btn = uicontrol('Parent', ui.panel, ... 
             'Style', 'pushbutton', ...
             'Units', 'pixel', ...
-            'Enable', popup_state, ...
+            'Enable', edit_state, ...
             'Visible', 'on', ...
             'String', 'x', ...
             'Callback', @histology_cancel_fcn, ...
@@ -5274,7 +5273,7 @@ fprintf('Done.\n\n');
         %ephys_update_fcn();
         %stimulus_update_fcn();
         druginjection_update_fcn();
-        %histology_update_fcn();
+        histology_update_fcn();
     end
 
     function recording_select_fcn(src, event)
@@ -5291,6 +5290,7 @@ fprintf('Done.\n\n');
         end
         
         druginjection_update_fcn();
+        histology_update_fcn();
     end
 
     function recording_add_fcn(src, event)
@@ -5580,17 +5580,155 @@ fprintf('Done.\n\n');
 
 % (3.20) Histology table controls
 
-    function histology_select_fcn()
+    function histology_update_fcn()
+        [data.histology.id, data.histology.dye, data.histology.staining, data.histology.note] = ...
+                mysql(sprintf('select histology_id, dye, staining, note from Histology where rec_id = %d;', ...
+                data.recording.active));
+            
+        if numel(data.histology.id) == 0 % empty table
+            popup_state = 'off';
+            edit_state = 'on'; % show editbox, add and cancel btn
+            add_state = 'on';
+            key_str = {'Create new'};
+            dye_str = '';
+            staining_str = '';
+            note_str = '';
+            data.histology.active = -1;
+        else % populated table
+            popup_state = 'on'; % show key select popup
+            edit_state = 'off';
+            add_state = 'on';
+            key_str = keystr_zipper(strcat(data.histology.dye, '-', data.histology.staining), data.histology.id);
+            dye_str = data.histology.dye(1);
+            staining_str = data.histology.staining(1);
+            note_str = data.histology.note(1);
+            data.histology.active = data.histology.id(1);
+        end
+        
+        set(gui.histology.key_popup, 'Enable', popup_state);
+        set(gui.histology.key_popup, 'String', key_str);
+        set(gui.histology.key_popup, 'Value', 1);
+        set(gui.histology.dye_edit, 'Enable', edit_state);
+        set(gui.histology.dye_edit, 'String', dye_str);
+        set(gui.histology.staining_edit, 'Enable', edit_state);
+        set(gui.histology.staining_edit, 'String', staining_str);
+        set(gui.histology.note_edit, 'Enable', edit_state);
+        set(gui.histology.note_edit, 'String', note_str);
+        set(gui.histology.key_add_btn, 'Enable', add_state);
+        set(gui.histology.key_rem_btn, 'Enable', popup_state);
+        set(gui.histology.key_cancel_btn, 'Enable', edit_state);
+        
+        % update depending tables
+        % anatomy_update_fcn();
     end
 
-    function histology_add_fcn()
+    function histology_select_fcn(src, event)
+        if isempty(data.histology.id)
+            data.histology.active = -1;
+            set(gui.histology.dye_edit, 'String', '');   
+            set(gui.histology.staining_edit, 'String', '');
+            set(gui.histology.note_edit, 'String', '');
+        else
+            val = get(src, 'Value');
+            data.histology.active = data.histology.id(val);
+            set(gui.histology.dye_edit, 'String', data.histology.dye(val));
+            set(gui.histology.staining_edit, 'String', data.histology.staining(val));
+            set(gui.histology.note_edit, 'String', data.histology.note(val));
+        end
     end
 
-    function histology_rem_fcn()
+    function histology_add_fcn(src, event)
+        if strcmp(get(gui.histology.key_popup, 'Enable'), 'on')
+            popup_state = 'off';
+            edit_state = 'on';
+            set(gui.histology.dye_edit, 'String', '');
+            set(gui.histology.staining_edit, 'String', '');
+            set(gui.histology.note_edit, 'String', '');
+            set(gui.histology.key_popup, 'String', {'Create new'});
+            set(gui.histology.key_popup, 'Value', 1);
+        elseif strcmp(get(gui.histology.dye_edit, 'Enable'), 'on')
+            dye = get(gui.histology.dye_edit, 'String');
+            staining = get(gui.histology.staining_edit, 'String');
+            note = get(gui.histology.note_edit, 'String');
+            data.histology.id = [data.histology.id; ...
+                insert_histology(data.recording.active, dye, staining, 'Note', note, 'Verbose', true)];
+            if isempty(dye); dye = {''}; end
+            data.histology.dye = [data.histology.dye; dye];
+            if isempty(staining); staining = {''}; end
+            data.histology.staining = [data.histology.staining; staining];
+            if isempty(note); note = {''}; end
+            data.histology.note = [data.histology.note; note];
+            set(gui.histology.subtitle_text, ...
+                'String', sprintf('( Rows: %d )', length(data.histology.id)));
+            set(gui.histology.key_popup, ...
+                'String', keystr_zipper(strcat(data.histology.dye, '-', data.histology.staining), ...
+                data.histology.id));
+            set(gui.histology.key_popup, ...
+                'Value', length(data.histology.id));
+            histology_select_fcn(src, event); % trigger select callback
+            popup_state = 'on';
+            edit_state = 'off';
+        end
+        set(gui.histology.dye_edit, 'Enable', edit_state);
+        set(gui.histology.staining_edit, 'Enable', edit_state);
+        set(gui.histology.note_edit, 'Enable', edit_state);
+        set(gui.histology.key_popup, 'Enable', popup_state);
+        set(gui.histology.key_cancel_btn, 'Enable', edit_state);
+        set(gui.histology.key_rem_btn, 'Enable', popup_state);
     end
 
-    function histology_cancel_fcn()
+    function histology_rem_fcn(src, event)
+        val = get(gui.histology.key_popup, 'Value');
+        id = data.histology.id(val);
+        answ = questdlg('Are you sure?', 'Confirm removal', 'Yes', 'No', 'No');
+        if strcmp(answ, 'Yes')
+            % delete row
+            mysql(sprintf('delete from Histology where histology_id = %d;', id));
+            % update ui / data container
+            data.histology.id(val) = [];
+            data.histology.dye(val) = [];
+            data.histology.staining(val) = [];
+            data.histology.note(val) = [];
+            set(gui.histology.subtitle_text, ...
+                'String', sprintf('( Rows: %d )', length(data.histology.id)));
+            if isempty(data.histology.id) % force edit mode
+                set(gui.histology.dye_edit, 'Enable', 'on');
+                set(gui.histology.staining_edit, 'Enable', 'on');
+                set(gui.histology.note_edit, 'Enable', 'on');
+                set(gui.histology.key_popup, 'Enable', 'off');
+                set(gui.histology.key_cancel_btn, 'Enable', 'on');
+                set(gui.histology.key_rem_btn, 'Enable', 'off');
+                set(gui.histology.key_popup, 'String', {'Create new'});
+                set(gui.histology.key_popup, 'Value', 1);
+            else
+                set(gui.histology.key_popup, ...
+                'String', keystr_zipper(strcat(data.histology.dye, '-', data.histology.staining), ...
+                data.histology.id));
+                set(gui.histology.key_popup, ...
+                'Value', length(data.histology.id));
+            end
+            histology_select_fcn(src, event);
+        end
     end
+
+    function histology_cancel_fcn(src, event)
+        if ~isempty(data.histology.id)
+            set(gui.histology.dye_edit, 'Enable', 'off');
+            set(gui.histology.staining_edit, 'Enable', 'off');
+            set(gui.histology.note_edit, 'Enable', 'off');
+            set(gui.histology.key_popup, 'Enable', 'on');
+            set(gui.histology.key_rem_btn, 'Enable', 'on');
+            set(src, 'Enable', 'off');
+            set(gui.histology.key_popup, ...
+                'Value', length(data.histology.id));
+            histology_select_fcn(src, event);
+        else
+            set(gui.histology.dye_edit, 'String', '');
+            set(gui.histology.staining_edit, 'String', '');
+            set(gui.histology.note_edit, 'String', '');
+        end
+    end
+
 
 % (3.21) Anatomy table controls
 
