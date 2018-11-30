@@ -8,7 +8,8 @@
 Fs = 1000;
 mins = 5;
 limit = Fs*60*mins; %creates segment of desired length
-data = alldata([1:limit],:); %takes all data minus VR data and pulse channel
+data = alldata([1:limit],[5:36]); %takes all data minus VR data and pulse channel
+%data = alldata([1000:5000],[5:36]);
 %a11rec2 = 7:22
 
 figure
@@ -18,6 +19,7 @@ corr_mat = corr(data);
 imagesc(corr_mat)
 title('Raw')
 colorbar
+caxis([0.1 1])
 
 %%
 [b,a]=butter(4,10/(Fs/2),'high');
@@ -36,10 +38,13 @@ subplot(2,3,2)
 imagesc(corr_filter_mat1)
 title('Filtered- 10 Hz')
 colorbar
+caxis([0.1 1])
+
 subplot(2,3,3)
 imagesc(corr_filter_mat2)
 title('Filtered- 100 Hz')
 colorbar
+caxis([0.1 1])
 
 %%
 chan_mean = nanmean(corr_mat);

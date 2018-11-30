@@ -46,21 +46,25 @@ end
 % for probes with multiple shanks, do first leftmost shank all chans in order of site locations, then next shank, etc
 remapdir = '/alzheimer/proberemapping';
 cd(remapdir);
+if ~strcmp(recsystype,'Intan')
 remapfile =sprintf('ProbeRemapping_%s_Amplipex.csv', probetype);
+else
+ remapfile =sprintf('ProbeRemapping_%s_Intan.csv', probetype); 
+end
 fullremapfilename = fullfile(remapdir, remapfile);
 fid=fopen(fullremapfilename);
 D = textscan(fid, '%d %d %d %d %d', 'headerlines', 6, 'Delimiter', ';');  %read 5 collumns (for each recsite a probesitenr, adaptorchannr, HSchannr, x-coord, y-coord; first 6 lines are headers so not read here
-if strcmp(recsystype,'Intan')
-    HSchans=D{1,2}';%second collumn holds HSchan nrs  for Intan files
-    
-    HSchans(HSchans==0) = []; %patch added to remove 0s in new remapping file, 15.03.2018
-    
-else
-HSchans=D{1,3}';%third collumn holds HSchan nrs for Amplipex files
+% if strcmp(recsystype,'Intan')
+%     HSchans=D{1,2}';%second collumn holds HSchan nrs  for Intan files
+%     
+%     HSchans(HSchans==0) = []; %patch added to remove 0s in new remapping file, 15.03.2018
+%     
+% else
+HSchans=D{1,4}';%third collumn holds HSchan nrs for Amplipex files
 
 
 
-end
+%end
 fclose(fid);
 
 
@@ -265,9 +269,11 @@ if strcmp(recsystype, 'Intan')
     %chansindx list that no longer includes missing chans, and has indices 
     %for all other chans that do not exceed the actual nr of recorded chans
     chansindx=HSchans(ismember(HSchans, recordedchans));
+    if nmissingchans >0
     for i=1:ndatachans
         indxcorrection = sum(chansindx(i)>missingchans);
         chansindx(i) = chansindx(i)-indxcorrection;
+    end
     end
 %     for i=1:nsites
 %         if any(missingchans==i)
@@ -364,7 +370,7 @@ alldatastruct(nsites).chandata = {zeros(size(allchans_raw,2),1)};
 %to access data from channel i: alldatastruct(i).chandata;
 %to get site nr on the probe: alldatastruct(i).probesitenr
 %to get site anatomical location: alldatastruct(i).anatloc
-for i=1:nchans
+for i=1:nsites
     alldatastruct(i).chandata = allchans_raw(i,:);         
     alldatastruct(i).probesitenr = HSchans(i);
     if length(anatlocs) > 1
