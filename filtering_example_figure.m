@@ -115,6 +115,7 @@ dataOut = filter(b,a,dataIn);
     hold on
 
     xlim([0, 20])
+    ylim([-5500, 5500])
     vline(rewards/1000,'r','Reward')
 
     figure(h2)
@@ -130,7 +131,7 @@ dataOut = filter(b,a,dataIn);
     figure(h3)
    
     %plot(MeanThetaPowerNorm)
-        plot(MeanThetaPowerNorm)
+        plot(MeanThetaPower)
 hold on
 
     
@@ -139,6 +140,7 @@ hold on
     subplot(4,1,2)
     plot(times,clean)
     xlim([0,20])
+    ylim([-5500, 5500])
     title('Mean Subtraction')
         vline(rewards/1000,'r','')
     
@@ -155,7 +157,7 @@ hold on
         figure(h3)
    % subplot(5,1,2)
     %plot(MeanThetaPowerNorm)
-        plot(MeanThetaPowerNorm)
+        plot(MeanThetaPower)
     %xlim([1, length(mychan)])
     %title('Mean Subtraction')
     
@@ -165,6 +167,7 @@ hold on
         subplot(4,1,3)
     plot(times, dataOut)
     xlim([0 20])
+    ylim([-5500, 5500])
     title('6th Order Butterworth Filter')
             vline(rewards/1000,'r','')
     
@@ -181,7 +184,8 @@ hold on
         figure(h3)
     %subplot(5,1,3)
     %plot(MeanThetaPowerNorm)
-        plot(MeanThetaPowerNorm)
+        plot(MeanThetaPower)
+        
     %xlim([1, length(mychan)])
     %title('6th Order Butterworth Filter')
     
@@ -191,6 +195,7 @@ hold on
     subplot(4,1,4)
     plot(times, detrended)
     xlim([0 20])
+    ylim([-5500, 5500])
     title('Chronux Locdetrend')
             vline(rewards/1000,'r','')
     
@@ -201,14 +206,14 @@ hold on
     imagesc(zscore(AllStockwellSpectro))
     axis xy
      vline(rewards,'w','')
-    ylim([0 100])
+    ylim([0 50])
     title('Chronux Locdetrend')
     
         figure(h3)
    % subplot(5,1,4)
+    plot(MeanThetaPower)
     %plot(MeanThetaPowerNorm)
-    plot(MeanThetaPowerNorm)
-    title('Theta Power Normalized to Delta Band')
+    title('Raw Theta Power')
     xlim([1, length(MeanThetaPower)])
     %title('Chronux Locdetrend')
     

@@ -49,22 +49,22 @@ cd(remapdir);
 if ~strcmp(recsystype,'Intan')
 remapfile =sprintf('ProbeRemapping_%s_Amplipex.csv', probetype);
 else
- remapfile =sprintf('ProbeRemapping_%s_Intan.csv', probetype); 
+ remapfile =sprintf('ProbeRemapping_%s_Edge1x32_Intan.csv', probetype); 
 end
 fullremapfilename = fullfile(remapdir, remapfile);
 fid=fopen(fullremapfilename);
 D = textscan(fid, '%d %d %d %d %d', 'headerlines', 6, 'Delimiter', ';');  %read 5 collumns (for each recsite a probesitenr, adaptorchannr, HSchannr, x-coord, y-coord; first 6 lines are headers so not read here
-% if strcmp(recsystype,'Intan')
-%     HSchans=D{1,2}';%second collumn holds HSchan nrs  for Intan files
-%     
-%     HSchans(HSchans==0) = []; %patch added to remove 0s in new remapping file, 15.03.2018
-%     
-% else
+ if strcmp(recsystype,'Intan')
+    HSchans=D{1,2}';%second collumn holds HSchan nrs  for Intan files
+    
+    HSchans(HSchans==0) = []; %patch added to remove 0s in new remapping file, 15.03.2018
+    
+else
 HSchans=D{1,4}';%third collumn holds HSchan nrs for Amplipex files
 
 
 
-%end
+end
 fclose(fid);
 
 
@@ -251,7 +251,7 @@ if strcmp(recsystype, 'Intan')
             if strcmp(probetype,'poly2optrode') || strcmp(probetype,'poly3optrode')
                 pulses = [pulses, board_dig_in_channels];
             else
-                pulses = [pulses, board_adc_data];
+                pulses = [pulses, board_adc_data(1,:)]; %add more chans from board_adc_data as necessary
             end
         end
     end
@@ -382,9 +382,15 @@ end
 
 %% save struct in mat file
 %mousestr = sprintf('A%d', mousenr);
-recmatfilename=[mousename '_rec' num2str(recnr) '_ephys_alldatastruct2.mat'];
+% recmatfilename=[mousename '_rec' num2str(recnr) '_ephys_alldatastruct2.mat'];
+% if savematfile                  
+%     save(recmatfilename, 'alldatastruct','-v7.3');      %save newly created struct as mat file.
+% end
+
+%% save "normal" mat file
+recmatfilename2=[mousename '_rec' num2str(recnr) '_ephys_alldata.mat'];
 if savematfile                  
-    save(recmatfilename, 'alldatastruct','-v7.3');      %save newly created struct as mat file.
+    save(recmatfilename2, 'allchans_raw','-v7.3');      %save newly created struct as mat file.
 end
 
 %% save downsampled version of data in array
