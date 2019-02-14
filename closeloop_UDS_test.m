@@ -5,13 +5,13 @@
 
 % TODO
 
-
-% upstate amplitude (AUC?), see below
 % check immediately after stim whether laser has effect in following x
 % seconds?
+% gamma?
+
 
 % link mychan to detection chan from detection script
-function closeloop_UDS_test(allchans_raw,indices,my_chan,fs,baseline_min)
+function closeloop_UDS_test(dsdata,indices,my_chan,fs,baseline_min)
 
 
 
@@ -19,14 +19,14 @@ if ~exist('my_chan', 'var') || isempty(my_chan)
     my_chan = 1;  %default assume one pulsechan
 end
 
-data = allchans_raw(my_chan);
-indices_fs = indices*fs/200; %corrects for oversampling in detection script (original Fs = 20 KHz)
+data = dsdata(my_chan,:);
+indices_fs = indices*5; %corrects for oversampling in detection script (original Fs = 20 KHz, ds = 1KhZ)
 
 if ~isempty(find(indices_fs > size(data,2))) %fixes bug whereby upsampled indices overshoot original recording
     [row col] = find(indices_fs > size(data,2));
     indices_fs=indices_fs([1:row(1)-1],:); %chops off (first) indices that exceed matrix dimensions
 end
-laser = allchans_raw(33,:);
+laser = dsdata(33,:);
 laser_on = find(laser>0.8);
 %% check laser detection
 % x=1:length(laser);
@@ -40,11 +40,98 @@ test_indices = [baseline_min*60*fs+1,baseline_min*60*fs+1 + baseline_min*60*fs+1
 baseline_upstates = find(indices_fs(:,1) < baseline_indices(2)); % provides starting indices of all upstates in baseline
 test_upstates = find(indices_fs(:,1) > test_indices(1) & indices_fs(:,1) < test_indices(2));
 
-baseline_duration = indices_fs(baseline_upstates,2)-indices_fs(baseline_upstates,1);
-test_duration = indices_fs(test_upstates,2)-indices_fs(test_upstates,1);
+baseline_all = [indices_fs(baseline_upstates,1),indices_fs(baseline_upstates,2)];
+test_all = [indices_fs(test_upstates,1),indices_fs(test_upstates,2)];
+
+baseline_duration = baseline_all(:,2)-baseline_all(:,1);
+test_duration = test_all(:,2)-test_all(:,1);
 
 %%
-%amplitude options = max(snippet)-min(snippet)
-% or trapz(signal) (trapezoidal in tegration auc)
+auc_baseline = NaN(size(baseline_upstates));
+auc_test = NaN(size(test_upstates));
+
+for i = 1:length(auc_baseline)
+    auc_baseline(i) = trapz(data(baseline_all(i,1):baseline_all(i,2))); %calculates simple area under the curve for upstates in baseline
+end
+
+for j = 1:length(auc_test)
+    auc_test(j) = trapz(data(test_all(j,1):test_all(j,2)));
+end
+%% Peak Amplitude
+
+amp_baseline = NaN(size(baseline_upstates));
+amp_test = NaN(size(test_upstates));
+
+for i = 1:length(amp_baseline)
+    amp_baseline(i) = max(data(baseline_all(i,1):baseline_all(i,2)))...
+                        -min(data(baseline_all(i,1):baseline_all(i,2))); % mean gamma power in upstates
+end
+
+for j = 1:length(amp_test)
+        amp_test(j) = max(data(test_all(j,1):test_all(j,2)))...
+                        -min(data(test_all(j,1):test_all(j,2)));
+end
+
+if ~isempty(find(amp_baseline>1000))
+    amp_baseline(amp_baseline>1000) = NaN;
+end
+%% gamma etc
+[AllMaxTheta,AllMaxDelta, AllMaxGamma, MeanHighGammaPower, AllMaxFreqs, AllMaxFreqsGamma, AllThetaNorm, avgd] = Stockwell4Snippet_4CleanData(data,fs,[],[],[],[]);
+
+gamma_baseline = NaN(size(baseline_upstates));
+gamma_test = NaN(size(test_upstates));
+
+for i = 1:length(gamma_baseline)
+    gamma_baseline(i) = mean(AllMaxGamma(baseline_all(i,1):baseline_all(i,2))); % mean gamma power in upstates
+end
+
+for j = 1:length(gamma_test)
+    gamma_test(j) = mean(AllMaxGamma(test_all(j,1):test_all(j,2)));
+end
 
 
+%% Plot Summary Results
+subplot(1,5,1)
+freqs = [length(baseline_upstates)/baseline_min, length(test_upstates)/baseline_min];
+bar(freqs)
+freq_names = {'Baseline','Test'};
+set(gca,'xtick',[1:2],'xticklabel',freq_names)
+title('Upstates/Min')
+
+subplot(1,5,2)
+histogram(baseline_duration,10)
+hold on
+histogram(test_duration,10)
+%legend('Baseline','Test')
+title('Upstate Duration')
+xlabel('Duration (Seconds)')
+ylabel('n Upstates')
+
+subplot(1,5,3)
+histogram(auc_baseline,10)
+hold on
+histogram(auc_test,10)
+%legend('Baseline','Test')
+title('Area Under Curve')
+xlabel('Power')
+ylabel('n Upstates')
+
+subplot(1,5,4)
+histogram(amp_baseline,10)
+hold on
+histogram(amp_test,10)
+%legend('Baseline','Test')
+title('Peak Amplitude')
+xlabel('Power (uV)')
+ylabel('n Upstates')
+
+subplot(1,5,5)
+histogram(gamma_baseline,10)
+hold on
+histogram(gamma_test,10)
+legend('Baseline','Test')
+title('Average Gamma Power')
+xlabel('Power (uV)')
+ylabel('n Upstates')
+
+end

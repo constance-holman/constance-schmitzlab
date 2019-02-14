@@ -79,7 +79,12 @@ ylim([-1000 1000])
 
 figure
 ax1=subplot(3,1,2)
-p=plot(1:numel(uppu),uppu,1:numel(uppu),(movmedian(uppu,2000)+std(uppu(1:f*60*10))/2))
+
+% if (uppu) < f*60*10 %added 12.02.19 by CH for bug in short 190207 RH baseline
+%     p = plot:numel(uppu),uppu,1:numel(uppu),(movmedian(uppu,2000)+std(uppu(1:length(uppu))/2))%added 12.02.19 by CH for bug in short 190207 RH baseline
+% else
+% p=plot(1:numel(uppu),uppu,1:numel(uppu),(movmedian(uppu,2000)+std(uppu(1:f*60*10))/2))
+% end
 p(1).LineWidth = 2;p(2).LineWidth = 4; p(1).Color='k'
 title('1-4 Hz power')
 set(gca,'xticklabel',{[]})
@@ -91,14 +96,14 @@ for i=1: numel(ii3(1,:))
 rectangle('Position',[ii3(i) 0 ii4(i)-ii3(i) 50],'LineStyle', 'none','FaceColor',[71/255 121/255 152/255 0.5]) 
 end
 
-ax3=subplot(3,1,3)
-p=plot(1:numel(spikecountovertime),spikecountovertime,1:numel(spikecountovertime),(movmedian(spikecountovertime,2000)+std(spikecountovertime(1:f*60*10))/2))
-title('Spike rate/s')
-p(1).LineWidth = 2;;p(2).LineWidth = 4;; p(1).Color='k'
-hold on
-for i=1: numel(ii3(1,:))
-rectangle('Position',[ii3(i) 0 ii4(i)-ii3(i) 200],'LineStyle', 'none','FaceColor',[71/255 121/255 152/255 0.5]) 
-end
+% ax3=subplot(3,1,3)
+% p=plot(1:numel(spikecountovertime),spikecountovertime,1:numel(spikecountovertime),(movmedian(spikecountovertime,2000)+std(spikecountovertime(1:f*60*10))/2))
+% title('Spike rate/s')
+% p(1).LineWidth = 2;;p(2).LineWidth = 4;; p(1).Color='k'
+% hold on
+% for i=1: numel(ii3(1,:))
+% rectangle('Position',[ii3(i) 0 ii4(i)-ii3(i) 200],'LineStyle', 'none','FaceColor',[71/255 121/255 152/255 0.5]) 
+% end
 
 
 xticks(0:f*60:f*rec_lenght*60)
@@ -119,7 +124,7 @@ end
 % end
 % end
 title('raw trace')
-linkaxes([ax1,ax2,ax3],'x')
+%linkaxes([ax1,ax2,ax3],'x')
 xlim([1 numel(boom(:,1))/24])
 fprintf('When RIGHT-click, the point is selected \n When LEFT-click, ZOOM-IN is performed right into the selected point \n When DOUBLE-click, ZOOM-OUT is done \n A) If ENTER is pressed, the selection is terminated. If no point was already selected, the outputs are empty \n B) If BACKSPACE key is pressed, the last selected point isdeleted and the selection continues.')
 
@@ -138,7 +143,11 @@ function [ii1,ii2]  = find_upstates(boom,uppu,f,klik,spike_or_freqpower)
 %spike_or_freqpower==2   for power freq
 upstatelimit=4;%massima lunghezza in secondi
 
+if (uppu) < f*60*10 %added 12.02.19 by CH for bug in 190207RH baseline
+    overthreshold =uppu>movmedian(uppu,2000)+std(uppu(1:length(uppu)))/2;%added 12.02.19 by CH for bug in 190207RH baseline
+else
 overthreshold=uppu>movmedian(uppu,2000)+std(uppu(1:f*60*10))/2;
+end
 
 ii1=strfind( [0 overthreshold 0], [ 0 1 ] ); %start  upstate
 ii2=strfind( [0 overthreshold 0], [ 1 0 ] ); %stop upstate
