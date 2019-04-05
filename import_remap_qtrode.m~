@@ -8,8 +8,8 @@
 % changed order of input args!
 %
 
-function[allchansreordered]= import_remap_ephys_CH(recsystype, probetype, mousename, recnr,  npulsechans, savematfile, makeplot, plotchnrs)
-datapath =pwd; %for analysis under /home/constance/Data_Work
+function[allchansreordered]= import_remap_qtrode(recsystype, probetype, mousename, recnr,  npulsechans, savematfile, makeplot, plotchnrs,comment)
+
 if exist('recsystype', 'var') && ~isempty(recsystype)
     if ~(strcmp(recsystype,'Amplipex') || strcmp(recsystype,'Intan') ) 
         error('you have entered an amplifier name that is not recognized, pls change to Amplipex or Intan, or remove');
@@ -19,15 +19,9 @@ else
 end
 
 if exist('probetype', 'var') && ~isempty(probetype)
-    if ~(strcmp(probetype,'4x8LFP') || strcmp(probetype,'poly2')|| strcmp(probetype,'2x8LFP') || strcmp(probetype,'2x16CamNT') ...
-        || strcmp(probetype,'poly3') || strcmp(probetype,'CNT64') || strcmp(probetype,  'NNEdge32') || strcmp(probetype, 'poly2optrode')...
-        || strcmp(probetype, 'poly3optrode') || strcmp(probetype,'CNT32_Edge2x16') || strcmp(probetype,'CNT32_Parallel2x16')...
-        ||strcmp(probetype,'NN32_Edge1x32') || strcmp(probetype,'NN32_ISO3xtet') || strcmp(probetype,'NN32_Poly2')...
-        || strcmp(probetype,'NN32_Poly3') || strcmp(probetype, 'NN32_Edge1x32') || strcmp(probetype, 'NN32_Poly3'))
+    if ~(strcmp(probetype,'Q4_tetrode') || strcmp(probetype,'Q4_linear'))
         error('you have entered a probe name that is not recognized, pls change or remove');
     end;
-else
-    probetype='4x8LFP';  %default probe type: 4 shanks x 8 sites, 100um spacing, 400um intershank dist
 end
 
 if ~exist('npulsechans', 'var') || isempty(npulsechans)
@@ -42,107 +36,32 @@ if ~exist('makeplot', 'var') || isempty(makeplot)
     makeplot=0;
 end
 
+if ~exist('comment', 'var') || isempty(makeplot)
+    comment='';
+end
+
 %% remapping: put channels in order of site locations: first channel is closest to headstage, left, then go row by row from left to right until tip
-% for probes with multiple shanks, do first leftmost shank all chans in order of site locations, then next shank, etc
-remapdir = '/alzheimer/proberemapping';
-cd(remapdir);
-if ~strcmp(recsystype,'Intan')
-remapfile =sprintf('ProbeRemapping_%s_Amplipex.csv', probetype);
-else
- remapfile =sprintf('ProbeRemapping_%s_Intan.csv', probetype); 
-end
-fullremapfilename = fullfile(remapdir, remapfile);
-fid=fopen(fullremapfilename);
-D = textscan(fid, '%d %d %d %d %d', 'headerlines', 6, 'Delimiter', ';');  %read 5 collumns (for each recsite a probesitenr, adaptorchannr, HSchannr, x-coord, y-coord; first 6 lines are headers so not read here
- if strcmp(recsystype,'Intan')
-    HSchans=D{1,2}';%second collumn holds HSchan nrs  for Intan files
-    
-    HSchans(HSchans==0) = []; %patch added to remove 0s in new remapping file, 15.03.2018
-    
-else
-HSchans=D{1,4}';%third collumn holds HSchan nrs for Amplipex files
-
-
-
-end
-fclose(fid);
-
-
-% if strcmp(recsystype, 'amplipex')
-%     switch probetype
-%     case '4x8LFP' %A4x8-5mm-100-400-703-A32 ; for 5C18 site 29 is bad, reported impedance 9.75 %mapping to be confirmed
-%             HSchans = [20,28,27,19,26,29,25,30,24,31,23,32,22,21,18,17,16,15,12,11,1,3,2,14,4,13,5,7,6,9,8,10];
-%     case '2x16CamNT'
-%             HSchans = [20,28,27,19,26,29,25,30,24,31,23,32,22,21,18,17,16,15,12,11,1,3,2,14,4,13,5,7,6,9,8,10]; 
-%     case 'poly3' 
-%         HSchans = [20,23,10,28,3,8,27,32,9,19,1,6,26,22,7,29,11,5,25,21,13,30,12,4,24,18,14,31,15,2,17,16];
-%     case '2x8LFP'        
-%         HSchans = [16,15,12,11,1,3,2,14,4,13,5,7,6,9,8,10];
-%     case 'CNT64'
-%         HSchans = [60,57,52,51,64,63,15,16,13,14,12,11,10,9,8,7,55,58,57,50,56,49,51,52,30,54,53,...
-%                         4,1,6,5,2,48,45,46,44,47,43,42,3,41,29,40,37,31,28,27,32,38,39,36,35,34,33,17,...
-%                         18,19,20,22,21,24,23,26,25];
-%         %nchans = 64; %patch 29.06.17 by CH
-%     case 'CNT32_edge'
-%         HSchans = [4,13,5,12,15,6,2,11,14,7,3,10,8,9,16,1,20,29,21,28,31,22,18,27,30,23,19,26,24,25,32,17];
-%     case '1x32Edge' %verified correct JT 22.12.2017: order is from dorsal to ventral (tip is last chan)
-%         nshanks=1;
-%         sitespershank=32;
-%         fid=fopen('/alzheimer/proberemapping/ProbeRemapping_NNEdge32_Amplipex.csv');
-%         D = textscan(fid, '%d %d %d %d %d', 'headerlines', 6, 'Delimiter', ';');  %read 5 collumns (for each recsite a probesitenr, adaptorchannr, HSchannr, x-coord, y-coord; first 6 lines are headers so not read here
-%         HSchans=D{1,3}';                                                %third collumn holds HSchan nrs 
-%         fclose(fid);
-%         %HSchans = [10,8,9,6,7,5,13,4,14,2,3,1,11,12,15,16,17,18,21,22,32,23,31,24,30,25,29,26,19,27,28,20];
-%     end
+% % for probes with multiple shanks, do first leftmost shank all chans in order of site locations, then next shank, etc
+% remapdir = '/alzheimer/proberemapping';
+% cd(remapdir);
+% remapfile =sprintf('ProbeRemapping_%s_Amplipex.csv', probetype);
+% fullremapfilename = fullfile(remapdir, remapfile);
+% fid=fopen(fullremapfilename);
+% D = textscan(fid, '%d %d %d %d %d', 'headerlines', 6, 'Delimiter', ';');  %read 5 collumns (for each recsite a probesitenr, adaptorchannr, HSchannr, x-coord, y-coord; first 6 lines are headers so not read here
+% if strcmp(recsystype,'Intan')
+%     HSchans=D{1,2}';%second collumn holds HSchan nrs  for Intan files
+%     
+%     HSchans(HSchans==0) = []; %patch added to remove 0s in new remapping file, 15.03.2018
 %     
 % else
-%     switch probetype
-%     case '4x8LFP' %A4x8-5mm-100-400-703-A32 ; for 5C18 site 29 is bad, reported impedance 9.75
-%         HSchans = [27,17,22,21,20,26,25,30,29,24,18,19,31,23,16,28,8,13,9,2,7,15,1,0,5,11,12,10,4,14,3,6];
-%         HSchans = HSchans+1;    %make sure chans are in range 1-32 so can be used as indices
-%         nshanks=4;
-%         sitespershank = 8;
-%     case '2x16CamNT'
-%         HSchans = [31,27,22,18,28,23,21,26,29,24,20,25,30,19,32,17,1,16,3,14,9,10,8,2,7,15,11,12,6,13,5,4];
-%         nshanks=2;
-%         sitespershank=16;
-%     case 'poly3' 
-%         nshanks=1;
-%         sitespershank=32;
-%         HSchans = [];
-%         HSchans = HSchans+1;
-%     case 'poly3optrode'
-%         nshanks=1;
-%         sitespershank=32;
-%         HSchans = [0,26,16,4,30,15,3,21,31,12,17,2,5,27,18,11,22,13,10,20,29,14,25,8,6,28,24,1,23,9,7,19];
-%         HSchans = HSchans+1;
-%     case 'poly2' 
-%          nshanks=1;
-%         sitespershank=32;
-%         HSchans = [7,23,1,28,6,25,14,20,10,22,11,27,5,17,12,21,4,26,3,30,9,19,8,24,13,29,2,18,15,31,0,16];   
-%         HSchans = HSchans+1;    %make sure chans are in range 1-32 so can be used as indices     
-%     case 'poly2optrode'
-%         nshanks=1;
-%         sitespershank=32;
-%         HSchans = [7,23,1,28,6,25,14,20,10,22,11,27,5,17,12,21,4,26,3,30,9,19,8,24,13,29,2,18,15,31,0,16];   
-%         HSchans = HSchans+1;    %make sure chans are in range 1-32 so can be used as indices
-%     case '2x8LFP'  
-%         nshanks=12;
-%         sitespershank=8;
-%         %HSchans = [1,16,3,14,9,10,8,2,7,15,11,12,6,13,5,4];
-%         HSchans = [27,17,22,21,20,26,25,30,29,24,18,19,31,23,16,28];
-%         HSchans = HSchans+1;    %make sure chans are in range 1-32 so can be used as indices
-%     case '1x32Edge'
-%         nshanks=1;
-%         sitespershank=32;
-%         HSchans = [];
-%         HSchans = HSchans+1;    %make sure chans are in range 1-32 so can be used as indices    
-%     case 'CNT32_edge'
-%             HDchans = [4,13,5,12,15,6,2,11,14,7,3,10,8,9,16,1,20,29,21,28,31,22,18,27,30,23,19,26,24,25,32,17];
-%             nshanks=2;
-%             sitespershank=16;
-%     end
-%    end
+% HSchans=D{1,3}';%third collumn holds HSchan nrs for Amplipex files
+% 
+% 
+% 
+% end
+% fclose(fid);
+
+HSchans=[15:18]; %for intan recs
 
 nsites = length(HSchans);
 
@@ -161,67 +80,10 @@ else
     disp(anatlocs);
     fclose(fid);
 end
-% switch mousenr
-%     case 3
-%         if recnr==1 % 190231.rhd to 200531.rhd; note this expmnt has no adc input ie no pulses!
-%             shank1={'cx','cx','alv','alv','so','so','sp','sr'};
-%             shank2={'cx','alv','so','so','sp','sr','sr','slm'};
-%             shank3={'alv','so','so','sp','sr','sr','slm','slm'};
-%             shank4={'alv','alv','so','sp','sr','sr','sr','slm'};        
-%             anatlocs=[shank1, shank2, shank3, shank4];
-%         end
-%     case 4
-%     case 5
-%         if recnr==1 %start rec in file .._184149.rhd
-%             anatlocs={'cx','cx','alv','alv','alv','alv','alv','alv','SO','SO','SO','SO','SO','SO','SO','SP','SP','SP','SR','SR','SR','SR','SR','SR','SR','SR','SR','SR','SLM','SLM','SLM','SLM', 'pulse'}; 
-%         end
-%     case 6
-%         if recnr==1 || recnr==2
-%             %locations for all remapped sites, ie in anatomical order (exact
-%             %config depends on probe type, eg linear from dorsal to ventral for poly2)
-%             anatlocs={'SO','SO','SO','SO','SO','SP','SP','SP','SR','SR','SR','SR','SR','SR','SR','SR','SLM','SLM','SLM','SLM','SM','SM','SM','SM','SM','SM','SM','SM','SM','SG','SG','SG', 'pulse'}; 
-%         end
-%     case 7
-%         if recnr==2
-%             anatlocs={'cx','cx','cx','cx','cx','cx','cx','alv','alv','alv','alv','alv','alv','SO','SO','SO','SO','SO','SO','SP','SP','SR','SR','SR','SR','SR','SR','SR','SR','SR','SLM','SLM','pulse'}; 
-%         end
-%     case 8
-%         if recnr==2
-%             %note locations only correction for second part of rec2, ie
-%             %after 14:54!!
-%             anatlocs={'alv','alv','alv','alv','alv','alv','SO','SO','SO','SO','SO','SO','SP','SP','SR','SR','SR','SR','SR','SR','SR','SR','SR','SLM','SLM','SĹM','SLM','SLM','SLM','SLM','SLM','SLM','pulse'}; 
-%         end
-%     case 9
-%         if recnr==3
-%             shank1={'so','sp','sr','sr','slm','slm','sr','sr'};
-%             shank2={'sr','sr','slm','slm','ca3sr','ca3sr','ca3sp','ca3so'};
-%             shank3={'x','x','x','x','x','x','x','x'};%broken shank, ie not in brain
-%             shank4={'x','x','x','x','x','x','x','x'};
-%             anatlocs=[shank1, shank2, shank3, shank4, {'pulse'}];
-%         end
-%     case 10
-%         if recnr==1
-%             shank1={'alv','alv','so','sp','sp','ca3sr','ca3sr','ca3sp'};
-%             shank2={'alv','so','sp','sp','sr','sr','ca3sr','ca3sr'};
-%             shank3={'x','x','x','x','x','x','x','x'};%broken shank, ie not in brain
-%             shank4={'x','x','x','x','x','x','x','x'};
-%             anatlocs=[shank1, shank2, shank3, shank4, {'pulse'}];
-%         end        
-%     case 11
-%         if recnr==2
-%             shank1={'alv','so','so','sp','sr','ca3sr','ca3sr','ca3sr'};
-%             shank2={'alv','alv','so','sp','sr','sr','sr','slm'};
-%             shank3={'x','x','x','x','x','x','x','x'};%broken shank, ie not in brain
-%             shank4={'x','x','x','x','x','x','x','x'};
-%             anatlocs=[shank1, shank2, shank3, shank4, {'pulse'}];
-%         end  
-%     otherwise
-%         anatlocs=[];
-% end
 
 %% cd to Data_Work
 %datapath = ['/alzheimer/Data_Work/' mousename '/recordings'];
-
+datapath = ['/home/constance/Motion Tracking Calib'];
 cd(datapath)
 %% read in data
 if strcmp(recsystype, 'Intan')
@@ -252,9 +114,14 @@ if strcmp(recsystype, 'Intan')
             if strcmp(probetype,'poly2optrode') || strcmp(probetype,'poly3optrode')
                 pulses = [pulses, board_dig_in_channels];
             else
-                pulses = [pulses, board_adc_data(1,:)]; %add more chans from board_adc_data as necessary
+                pulses = [pulses, board_adc_data];
             end
         end
+    end
+
+    %% Exclude blank channels
+    if size(data,1)>length(HSchans)
+        data = data([15:18],:);
     end
     
     %% find missing channels and rearrange data accordingly
@@ -267,15 +134,14 @@ if strcmp(recsystype, 'Intan')
     recordedchans=recordedchans+1; %reset to start with 1 instead of 0
     missingchans=HSchans(~ismember(HSchans, recordedchans));
     nmissingchans=length(missingchans);
-    %chansindx list that no longer includes missing chans, and has indices 
-    %for all other chans that do not exceed the actual nr of recorded chans
-    chansindx=HSchans(ismember(HSchans, recordedchans));
-    if nmissingchans >0
-    for i=1:ndatachans
-        indxcorrection = sum(chansindx(i)>missingchans);
-        chansindx(i) = chansindx(i)-indxcorrection;
-    end
-    end
+%     %chansindx list that no longer includes missing chans, and has indices 
+%     %for all other chans that do not exceed the actual nr of recorded chans
+%     chansindx=HSchans(ismember(HSchans, recordedchans));
+chansindx=[1:4];
+%     for i=1:ndatachans
+%         indxcorrection = sum(chansindx(i)>missingchans);
+%         chansindx(i) = chansindx(i)-indxcorrection;
+%     end
 %     for i=1:nsites
 %         if any(missingchans==i)
 %             for i2 = 1: ndatachans
@@ -294,6 +160,7 @@ if strcmp(recsystype, 'Intan')
     
     datachansreordered = NaN(size(data)); %make new matrix to hold reordered chans
     missingcnt=0;
+    
     for i=1:nsites 
         if any(HSchans(i)==missingchans)
             chani = NaN(1,ndatapnts);
@@ -305,9 +172,10 @@ if strcmp(recsystype, 'Intan')
     end
         
     % add row of pulses to reordered data channels
-    allchans_raw=[datachansreordered; pulses]; 
+    allchans_reordered=[datachansreordered; pulses]; 
     if isempty(pulses)
         disp('no tracking pulses detected in file!');
+        nchans=nsites;
     else
         nchans = nsites + 1;    %count pulse channel 
         if nchans ~= size(allchans_raw,1)
@@ -364,6 +232,8 @@ else
 end
 
 
+
+
 %% create data structure to store all info
 % pre-allocate struct
 alldatastruct(nsites).chandata = {zeros(size(allchans_raw,2),1)};
@@ -371,7 +241,7 @@ alldatastruct(nsites).chandata = {zeros(size(allchans_raw,2),1)};
 %to access data from channel i: alldatastruct(i).chandata;
 %to get site nr on the probe: alldatastruct(i).probesitenr
 %to get site anatomical location: alldatastruct(i).anatloc
-for i=1:nsites
+for i=1:nchans
     alldatastruct(i).chandata = allchans_raw(i,:);         
     alldatastruct(i).probesitenr = HSchans(i);
     if length(anatlocs) > 1
@@ -383,23 +253,21 @@ end
 
 %% save struct in mat file
 %mousestr = sprintf('A%d', mousenr);
-% recmatfilename=[mousename '_rec' num2str(recnr) '_ephys_alldatastruct2.mat'];
+recmatfilename=[mousename '_rec' num2str(recnr) '_ephys_alldatastruct2_' comment '.mat'];
 % if savematfile                  
 %     save(recmatfilename, 'alldatastruct','-v7.3');      %save newly created struct as mat file.
 % end
 
-%% save "normal" mat file
-recmatfilename2=[mousename '_rec' num2str(recnr) '_ephys_alldata.mat'];
+recmatfilename2=[mousename '_rec' num2str(recnr) '_ephys_alldata_' comment '.mat'];
 if savematfile                  
-    save(recmatfilename2, 'allchans_raw','-v7.3');      %save newly created struct as mat file.
+    save(recmatfilename2, 'd','-v7.3');      %save newly created struct as mat file.
 end
-
 %% save downsampled version of data in array
 dsdata=[];
-for d=1:size(allchans_raw,1)
-    dsdata(d,:) = downsample(allchans_raw(d,:),20);
+for d=1:size(data,1)
+    dsdata(d,:) = downsample(datachansreordered(d,:),20);
 end
-dsmatfilename=[mousename '_rec' num2str(recnr) '_downsampled.mat'];
+dsmatfilename=[mousename '_rec' num2str(recnr) '_downsampled_' comment '.mat'];
 if savematfile                  
     save(dsmatfilename, 'dsdata','-v7.3');      %save newly created struct as mat file.
 end

@@ -1,0 +1,8 @@
+%% test_ephys_bonsai
+pulses = allchans_reordered(5,:);
+
+pulse_on = pulses < -0.6;
+pulse_switch = find(diff(pulse_on) ~= 0);
+
+switch_on = pulse_switch(1:2:end);
+switch_off = pulse_switch(2:2:end);

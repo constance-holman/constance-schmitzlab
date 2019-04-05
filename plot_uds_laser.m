@@ -9,13 +9,13 @@ snip_lims = 1:length(laser_chan);
 my_chan = dsdata(1,snip_lims);
 
 
-% ha(1) = subplot(2,1,1)
-% %plot(laser_chan)
-% %plot(laser_chan(snip_lims))
-% ha(2) =subplot(2,1,2)
-%plot(my_chan);
-%plot(my_chan)
-%linkaxes(ha, 'x');
+ha(1) = subplot(2,1,1)
+plot(laser_chan)
+plot(laser_chan(snip_lims))
+ha(2) =subplot(2,1,2)
+plot(my_chan);
+plot(my_chan)
+linkaxes(ha, 'x');
 
 epoch_indices = detect_UDS_gamma(my_chan',2,100);
 %%
@@ -31,12 +31,12 @@ plot(laser_chan(snip_lims))
 ha(2)=subplot(2,1,2)
 plot(my_chan)
 
-% hold on
-% x=1:length(my_chan);
-%      for e=1:size(epoch_indices,1)
-%          plot(x(epoch_indices{e,1}),my_chan(epoch_indices{e,1}),'r')
-%      end
-%%
+hold on
+x=1:length(my_chan);
+     for e=1:size(epoch_indices,1)
+         plot(x(epoch_indices{e,1}),my_chan(epoch_indices{e,1}),'r')
+     end
+%
      linkaxes(ha, 'x')
 for e=1:size(epoch_indices,1)
     vfill([epoch_indices{e,1}(1) epoch_indices{e,1}(end)],'g','facealpha',.6,'edgecolor','g','linestyle','--')

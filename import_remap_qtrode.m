@@ -82,7 +82,8 @@ else
 end
 
 %% cd to Data_Work
-datapath = ['/alzheimer/Data_Work/' mousename '/recordings'];
+%datapath = ['/alzheimer/Data_Work/' mousename '/recordings'];
+datapath = ['/home/constance/Motion Tracking Calib'];
 cd(datapath)
 %% read in data
 if strcmp(recsystype, 'Intan')
@@ -171,13 +172,13 @@ chansindx=[1:4];
     end
         
     % add row of pulses to reordered data channels
-    allchans_raw=[datachansreordered; pulses]; 
+    allchans_reordered=[datachansreordered; pulses]; 
     if isempty(pulses)
         disp('no tracking pulses detected in file!');
         nchans=nsites;
     else
         nchans = nsites + 1;    %count pulse channel 
-        if nchans ~= size(allchans_raw,1)
+        if nchans ~= size(allchans_reordered,1)
             error('nr of chans is wrong, maybe multiple pulse channels detected?');
         end
         HSchans = [HSchans,nchans]; %add pulsechan nr as last chan for remapping
@@ -231,15 +232,17 @@ else
 end
 
 
+
+
 %% create data structure to store all info
 % pre-allocate struct
-alldatastruct(nsites).chandata = {zeros(size(allchans_raw,2),1)};
+alldatastruct(nsites).chandata = {zeros(size(allchans_reordered,2),1)};
 %struct to be used as follows:
 %to access data from channel i: alldatastruct(i).chandata;
 %to get site nr on the probe: alldatastruct(i).probesitenr
 %to get site anatomical location: alldatastruct(i).anatloc
 for i=1:nchans
-    alldatastruct(i).chandata = allchans_raw(i,:);         
+    alldatastruct(i).chandata = allchans_reordered(i,:);         
     alldatastruct(i).probesitenr = HSchans(i);
     if length(anatlocs) > 1
     alldatastruct(i).anatloc = anatlocs(i); 
@@ -251,13 +254,13 @@ end
 %% save struct in mat file
 %mousestr = sprintf('A%d', mousenr);
 recmatfilename=[mousename '_rec' num2str(recnr) '_ephys_alldatastruct2_' comment '.mat'];
-if savematfile                  
-    save(recmatfilename, 'alldatastruct','-v7.3');      %save newly created struct as mat file.
-end
+% if savematfile                  
+%     save(recmatfilename, 'alldatastruct','-v7.3');      %save newly created struct as mat file.
+% end
 
 recmatfilename2=[mousename '_rec' num2str(recnr) '_ephys_alldata_' comment '.mat'];
 if savematfile                  
-    save(recmatfilename2, 'data','-v7.3');      %save newly created struct as mat file.
+    save(recmatfilename2, 'allchans_reordered','-v7.3');      %save newly created struct as mat file.
 end
 %% save downsampled version of data in array
 dsdata=[];
